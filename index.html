@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Alexander Mueller</title>
-  <meta name="description" content="Alexander Mueller. Computer science student at UW-Madison, leaning into AI research. This site is a small neural network, query it yourself." />
+  <meta name="description" content="Alexander Mueller. Computer science student at UW-Madison, interested in AI research. This site is a real neural network, query it yourself." />
   <meta property="og:title" content="Alexander Mueller" />
   <meta property="og:description" content="A small neural network trained on one person. Run inference to learn more." />
   <meta property="og:type" content="website" />
@@ -20,7 +20,7 @@
   <!-- static content for crawlers and screen readers -->
   <div class="sr-only">
     <h1>Alexander Mueller</h1>
-    <p>Computer science student at the University of Wisconsin-Madison with a leaning toward AI research. Writes Rust and Python. Based in the SF Bay Area.</p>
+    <p>Computer science student at the University of Wisconsin-Madison, interested in AI research. Builds things end to end, from low-level systems to machine learning experiments. Based in the SF Bay Area.</p>
     <a href="https://github.com/alexmueller07">GitHub</a>
     <a href="https://www.linkedin.com/in/alexander-mueller-021658307/">LinkedIn</a>
     <a href="mailto:amueller.mco@gmail.com">Email</a>
@@ -36,8 +36,8 @@
 
   <!-- minimal chrome -->
   <header class="chrome chrome-top-left">
-    <div class="model-name">alexmueller<span class="dim">-v2</span></div>
-    <div class="model-sub dim">a small model trained on one person</div>
+    <div class="model-name">Alexander Mueller</div>
+    <div class="model-sub dim">a small neural network trained on one person</div>
   </header>
 
   <div class="chrome chrome-top-right">
@@ -50,16 +50,17 @@
   </div>
 
   <div class="chrome chrome-bottom-left dim mono-xs" id="hint">
-    drag to pan · scroll to zoom · click a glowing neuron
+    drag to pan · scroll to zoom · click a neuron · or just ask
   </div>
 
-  <!-- decoder output panel -->
+  <!-- decoder output panel (docks onto the winning neuron) -->
   <aside class="decoder" id="decoder" aria-live="polite">
     <div class="decoder-head mono-xs">
       <span class="decoder-dot"></span>
       <span>decoder</span>
       <span class="dim" id="decoder-meta"></span>
     </div>
+    <div class="decoder-probs" id="decoder-probs"></div>
     <div class="decoder-query dim" id="decoder-query"></div>
     <div class="decoder-out" id="decoder-out"></div>
     <div class="decoder-links" id="decoder-links"></div>
@@ -68,15 +69,16 @@
   <!-- prompt bar -->
   <form class="prompt-bar" id="prompt-form" autocomplete="off">
     <div class="prompt-chips" id="prompt-chips">
-      <button type="button" data-q="who">who?</button>
+      <button type="button" data-q="who?">who?</button>
       <button type="button" data-q="research">research</button>
       <button type="button" data-q="github">github</button>
       <button type="button" data-q="linkedin">linkedin</button>
       <button type="button" data-q="email">email</button>
+      <button type="button" data-q="help">help</button>
     </div>
     <div class="prompt-input-wrap">
       <span class="prompt-sigil">▸</span>
-      <input type="text" id="prompt-input" placeholder="ask the model anything" maxlength="80" spellcheck="false" />
+      <input type="text" id="prompt-input" placeholder="ask the network anything" maxlength="80" spellcheck="false" />
       <button type="submit" class="prompt-run" aria-label="Run inference">run</button>
     </div>
   </form>
