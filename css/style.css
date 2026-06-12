@@ -122,17 +122,18 @@ body {
 .decoder {
   position: fixed;
   z-index: 10;
-  left: 0;
-  top: 0;
-  width: 350px;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 312px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px 16px;
+  border-radius: 10px;
+  padding: 12px 14px 14px;
+  font-size: 12.5px;
   backdrop-filter: blur(12px);
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5);
   opacity: 0;
-  transform: translate(-9999px, 0);
   transition: opacity 0.45s ease, border-color 0.45s ease;
   pointer-events: none;
 }
@@ -192,7 +193,7 @@ body {
 .decoder-query::before { content: "▸ "; color: var(--violet); }
 
 .decoder-out {
-  font-size: 13.5px;
+  font-size: 12.5px;
   line-height: 1.75;
   color: var(--text);
   min-height: 24px;

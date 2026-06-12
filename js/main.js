@@ -225,10 +225,11 @@
     if (!userMoved) fitView();
   };
   const fitView = () => {
+    const panelW = W > 700 ? 360 : 0; // keep the net clear of the pinned decoder
     const bw = LAYER_X[3] - LAYER_X[0] + 440;
     const bh = Math.max(...LAYER_N.map((n, i) => (n - 1) * LAYER_SPACING[i])) + 240;
-    cam.k = Math.max(0.28, Math.min(1.3, Math.min((W - 60) / bw, (H - 170) / bh)));
-    cam.x = 40;
+    cam.k = Math.max(0.26, Math.min(1.3, Math.min((W - 60 - panelW) / bw, (H - 170) / bh)));
+    cam.x = 40 + panelW / 2 / cam.k;
     cam.y = -10;
   };
   window.addEventListener("resize", resize);
@@ -450,8 +451,7 @@
       ctx.fillText(tok.s, sx - 18 * cam.k, sy);
     }
 
-    // decoder panel docking + connector line
-    positionDecoder(dt);
+    // dashed connector from the winning neuron to the pinned decoder
     if (anchorNode && decoder.classList.contains("on") && W > 700) {
       const [sx, sy] = toScreen(anchorNode.cx, anchorNode.cy);
       const rect = decoder.getBoundingClientRect();
@@ -581,27 +581,6 @@
   let typeTimer = null;
   let passToken = 0;
   let pendingQuery = null;
-  const panelPos = { x: -9999, y: 0, init: false };
-
-  function positionDecoder(dt) {
-    if (W <= 700 || !anchorNode || !decoder.classList.contains("on")) return;
-    const [sx, sy] = toScreen(anchorNode.cx, anchorNode.cy);
-    const pw = decoder.offsetWidth, ph = decoder.offsetHeight;
-    let tx = sx - pw - 60;
-    if (tx < 14) tx = Math.min(W - pw - 14, sx + 60);
-    let ty = sy - ph / 2;
-    ty = Math.max(76, Math.min(H - ph - 130, ty));
-    if (!panelPos.init) {
-      panelPos.x = tx;
-      panelPos.y = ty;
-      panelPos.init = true;
-    } else {
-      const ease = Math.min(1, dt * 9);
-      panelPos.x += (tx - panelPos.x) * ease;
-      panelPos.y += (ty - panelPos.y) * ease;
-    }
-    decoder.style.transform = `translate(${panelPos.x}px, ${panelPos.y}px)`;
-  }
 
   function runInference(rawQuery) {
     if (!MODEL) {
@@ -689,7 +668,6 @@
         target.act = 1.7;
         burst(target, color);
         anchorNode = target;
-        panelPos.init = false;
         const text = isOod ? OOD_LINES[(Math.random() * OOD_LINES.length) | 0] : KNOWLEDGE[key].text;
         typeOut(rawQuery, text, KNOWLEDGE[key].links, result, words.length, myToken, target);
       },
