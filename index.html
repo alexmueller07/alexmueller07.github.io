@@ -2,283 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alexander Mueller | AI Researcher</title>
-  <meta name="description" content="Alexander Mueller is an AI researcher working on autonomous navigation, vision-language models, continual learning, and affective computing. CS at UW-Madison." />
-  <meta property="og:title" content="Alexander Mueller | AI Researcher" />
-  <meta property="og:description" content="Research across autonomous navigation, vision-language models, continual learning, and affective computing." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Alexander Mueller</title>
+  <meta name="description" content="Alexander Mueller. Computer science student at UW-Madison, leaning into AI research. This site is a small neural network, query it yourself." />
+  <meta property="og:title" content="Alexander Mueller" />
+  <meta property="og:description" content="A small neural network trained on one person. Run inference to learn more." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://alexmueller07.github.io" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>&#129504;</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <!-- Latent field background -->
-  <canvas id="field" aria-hidden="true"></canvas>
-  <div class="grain" aria-hidden="true"></div>
+  <!-- static content for crawlers and screen readers -->
+  <div class="sr-only">
+    <h1>Alexander Mueller</h1>
+    <p>Computer science student at the University of Wisconsin-Madison with a leaning toward AI research. Writes Rust and Python. Based in the SF Bay Area.</p>
+    <a href="https://github.com/alexmueller07">GitHub</a>
+    <a href="https://www.linkedin.com/in/alexander-mueller-021658307/">LinkedIn</a>
+    <a href="mailto:amueller.mco@gmail.com">Email</a>
+  </div>
 
-  <!-- Custom cursor -->
-  <div class="cursor-dot" aria-hidden="true"></div>
-  <div class="cursor-ring" aria-hidden="true"></div>
+  <!-- boot overlay -->
+  <div class="boot" id="boot" aria-hidden="true">
+    <pre class="boot-text" id="boot-text"></pre>
+  </div>
 
-  <!-- Training monitor HUD -->
-  <aside class="hud" id="hud" aria-hidden="true">
-    <div class="hud-row hud-title">
-      <span class="hud-live"></span>
-      <span>run: alexmueller-v1</span>
-    </div>
-    <div class="hud-row"><span>epoch</span><span id="hud-epoch">1 / 6</span></div>
-    <div class="hud-row"><span>loss</span><span id="hud-loss">1.0000</span></div>
-    <canvas id="hud-spark" width="148" height="28"></canvas>
-  </aside>
+  <!-- the network -->
+  <canvas id="net" aria-hidden="true"></canvas>
 
-  <!-- Nav -->
-  <header class="nav" id="nav">
-    <a class="nav-logo" href="#top" data-hover>
-      <span class="logo-bracket">[</span>AM<span class="logo-cursor">_</span><span class="logo-bracket">]</span>
-    </a>
-    <nav class="nav-links">
-      <a href="#about" data-hover><span class="nav-idx">01.</span>About</a>
-      <a href="#research" data-hover><span class="nav-idx">02.</span>Research</a>
-      <a href="#experience" data-hover><span class="nav-idx">03.</span>Experience</a>
-      <a href="#playground" data-hover><span class="nav-idx">04.</span>Playground</a>
-      <a href="#contact" data-hover><span class="nav-idx">05.</span>Contact</a>
-    </nav>
-    <div class="nav-actions">
-      <a class="icon-link" href="https://github.com/alexmueller07" target="_blank" rel="noopener" aria-label="GitHub" data-hover>
-        <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      </a>
-      <a class="icon-link" href="https://www.linkedin.com/in/alexander-mueller-021658307/" target="_blank" rel="noopener" aria-label="LinkedIn" data-hover>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
-      </a>
-    </div>
+  <!-- minimal chrome -->
+  <header class="chrome chrome-top-left">
+    <div class="model-name">alexmueller<span class="dim">-v2</span></div>
+    <div class="model-sub dim">a small model trained on one person</div>
   </header>
 
-  <main id="top">
+  <div class="chrome chrome-top-right">
+    <a class="chip-link" href="https://github.com/alexmueller07" target="_blank" rel="noopener" aria-label="GitHub">
+      <svg viewBox="0 0 16 16" width="17" height="17" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+    <a class="chip-link" href="https://www.linkedin.com/in/alexander-mueller-021658307/" target="_blank" rel="noopener" aria-label="LinkedIn">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+    </a>
+  </div>
 
-    <!-- ============ HERO ============ -->
-    <section class="hero">
-      <p class="hero-pre reveal mono">// initializing researcher profile</p>
-      <h1 class="hero-name" id="hero-name" data-text="Alexander Mueller">Alexander Mueller</h1>
-      <h2 class="hero-sub reveal">
-        I build and study systems that <span class="accent">learn</span>.
-      </h2>
-      <p class="hero-roles reveal mono">
-        <span class="prompt">&gt;</span> researching <span id="role-rotator" class="role-text">GNSS-denied UAV navigation</span><span class="type-caret">▊</span>
-      </p>
-      <p class="hero-blurb reveal">
-        Undergraduate computer scientist doing research across autonomous navigation,
-        vision-language models, continual learning, and affective computing.
-        I write a lot of Rust and Python.
-      </p>
-      <div class="hero-cta reveal">
-        <a class="btn btn-primary magnetic" href="https://github.com/alexmueller07" target="_blank" rel="noopener" data-hover>
-          <span>GitHub</span>
-        </a>
-        <a class="btn btn-ghost magnetic" href="https://www.linkedin.com/in/alexander-mueller-021658307/" target="_blank" rel="noopener" data-hover>
-          <span>LinkedIn</span>
-        </a>
-      </div>
-      <div class="hero-badges reveal mono">
-        <span class="badge" data-hover>Advl.ai</span>
-        <span class="badge" data-hover>Korea University</span>
-        <span class="badge" data-hover>UW-Madison</span>
-      </div>
-      <a class="scroll-hint" href="#about" aria-label="Scroll down" data-hover>
-        <span class="mono">scroll to descend</span>
-        <span class="scroll-arrow">↓</span>
-      </a>
-    </section>
+  <div class="chrome chrome-bottom-left dim mono-xs" id="hint">
+    drag to pan · scroll to zoom · click a glowing neuron
+  </div>
 
-    <!-- ============ ABOUT ============ -->
-    <section class="section" id="about">
-      <h2 class="section-title reveal"><span class="mono section-num">01.</span> <span class="scramble-on-view">About</span></h2>
-      <div class="about-grid">
-        <div class="about-text reveal">
-          <p>
-            I'm Alexander, a computer science student at the University of Wisconsin-Madison
-            currently splitting my time between three research roles on two continents.
-            My work sits at the intersection of perception, estimation, and learning:
-            teaching machines to know where they are, what they're looking at, and how to
-            keep learning without forgetting.
-          </p>
-          <p>
-            Right now that means building a Rust simulation benchmark for state estimation
-            in GNSS-denied environments at Advl.ai, studying vision-language models and
-            continual learning at Korea University's VGI Lab, and developing experiment
-            software for dyadic emotion studies at UW-Madison's Niedenthal Emotions Lab.
-          </p>
-          <p>
-            When something needs to be fast and correct, I reach for Rust.
-            When it needs to exist by tomorrow, Python.
-          </p>
-        </div>
-        <div class="about-card reveal mono" data-tilt>
-          <div class="about-card-line"><span class="k">location</span><span class="v">SF Bay Area</span></div>
-          <div class="about-card-line"><span class="k">degree</span><span class="v">B.S. Computer Science</span></div>
-          <div class="about-card-line"><span class="k">school</span><span class="v">UW-Madison '27</span></div>
-          <div class="about-card-line"><span class="k">languages</span><span class="v">Rust, Python</span></div>
-          <div class="about-card-line"><span class="k">status</span><span class="v status-ok">● training</span></div>
-        </div>
-      </div>
-    </section>
+  <!-- decoder output panel -->
+  <aside class="decoder" id="decoder" aria-live="polite">
+    <div class="decoder-head mono-xs">
+      <span class="decoder-dot"></span>
+      <span>decoder</span>
+      <span class="dim" id="decoder-meta"></span>
+    </div>
+    <div class="decoder-query dim" id="decoder-query"></div>
+    <div class="decoder-out" id="decoder-out"></div>
+    <div class="decoder-links" id="decoder-links"></div>
+  </aside>
 
-    <!-- ============ RESEARCH ============ -->
-    <section class="section" id="research">
-      <h2 class="section-title reveal"><span class="mono section-num">02.</span> <span class="scramble-on-view">Research Areas</span></h2>
-      <p class="section-lede reveal">Four threads, one question: how do machines perceive, remember, and act?</p>
-      <div class="research-grid">
-        <article class="research-card reveal" data-tilt data-hover>
-          <canvas class="card-viz" data-viz="nav" width="280" height="120"></canvas>
-          <h3>Autonomous Navigation</h3>
-          <p>State estimation and sensor fusion for UAVs flying without GPS. Kalman filters, particle filters, and the question of trusting your sensors over open water.</p>
-          <span class="card-tag mono">@ Advl.ai</span>
-        </article>
-        <article class="research-card reveal" data-tilt data-hover>
-          <canvas class="card-viz" data-viz="vlm" width="280" height="120"></canvas>
-          <h3>Vision-Language Models</h3>
-          <p>How models ground language in pixels. Studying the representations VLMs build and where they break.</p>
-          <span class="card-tag mono">@ Korea University VGI Lab</span>
-        </article>
-        <article class="research-card reveal" data-tilt data-hover>
-          <canvas class="card-viz" data-viz="cl" width="280" height="120"></canvas>
-          <h3>Continual Learning</h3>
-          <p>Models that learn task after task without catastrophic forgetting. Memory, plasticity, and the stability dilemma.</p>
-          <span class="card-tag mono">@ Korea University VGI Lab</span>
-        </article>
-        <article class="research-card reveal" data-tilt data-hover>
-          <canvas class="card-viz" data-viz="affect" width="280" height="120"></canvas>
-          <h3>Affective Computing</h3>
-          <p>Software for studying emotion between people. Building the experiment infrastructure behind dyadic emotion research.</p>
-          <span class="card-tag mono">@ Niedenthal Emotions Lab</span>
-        </article>
-      </div>
-    </section>
-
-    <!-- ============ EXPERIENCE ============ -->
-    <section class="section" id="experience">
-      <h2 class="section-title reveal"><span class="mono section-num">03.</span> <span class="scramble-on-view">Experience</span></h2>
-      <p class="section-lede reveal mono">forward pass through the pipeline →</p>
-      <div class="timeline">
-        <div class="timeline-rail" aria-hidden="true"><div class="timeline-fill" id="timeline-fill"></div></div>
-
-        <article class="xp reveal" data-tilt data-hover>
-          <div class="xp-node mono">in</div>
-          <div class="xp-body">
-            <header class="xp-head">
-              <h3>Research Scientist Intern</h3>
-              <span class="xp-when mono">May 2026 → now</span>
-            </header>
-            <p class="xp-org">Advl.ai · Seoul, South Korea</p>
-            <p>Researching GNSS-denied UAV navigation. Building a Rust simulation benchmark
-            comparing state estimation and sensor fusion algorithms for autonomous flight
-            in maritime environments.</p>
-            <div class="xp-tags mono">
-              <span>Rust</span><span>Kalman Filtering</span><span>Sensor Fusion</span><span>Simulation</span>
-            </div>
-          </div>
-        </article>
-
-        <article class="xp reveal" data-tilt data-hover>
-          <div class="xp-node mono">h1</div>
-          <div class="xp-body">
-            <header class="xp-head">
-              <h3>Student Researcher</h3>
-              <span class="xp-when mono">Jun 2026 → now</span>
-            </header>
-            <p class="xp-org">VGI Lab, Korea University Dept. of Artificial Intelligence · Seoul</p>
-            <p>Undergraduate researcher working on vision-language models and continual
-            learning. Studying how multimodal models retain and transfer knowledge
-            across sequential tasks.</p>
-            <div class="xp-tags mono">
-              <span>Python</span><span>PyTorch</span><span>VLMs</span><span>Continual Learning</span>
-            </div>
-          </div>
-        </article>
-
-        <article class="xp reveal" data-tilt data-hover>
-          <div class="xp-node mono">h2</div>
-          <div class="xp-body">
-            <header class="xp-head">
-              <h3>Software Engineering &amp; Research Assistant</h3>
-              <span class="xp-when mono">Jun 2026 → now</span>
-            </header>
-            <p class="xp-org">Niedenthal Emotions Lab, University of Wisconsin-Madison · Remote</p>
-            <p>Developing experiment software for dyadic emotion studies, the systems
-            researchers use to measure how emotion moves between two people in real time.</p>
-            <div class="xp-tags mono">
-              <span>Python</span><span>Experiment Design</span><span>Affective Computing</span>
-            </div>
-          </div>
-        </article>
-
-        <article class="xp reveal" data-tilt data-hover>
-          <div class="xp-node mono">out</div>
-          <div class="xp-body">
-            <header class="xp-head">
-              <h3>B.S. Computer Science</h3>
-              <span class="xp-when mono">2025 → 2027</span>
-            </header>
-            <p class="xp-org">University of Wisconsin-Madison</p>
-            <p>Undergraduate computer science with a focus on machine learning and systems.</p>
-            <div class="xp-tags mono">
-              <span>Machine Learning</span><span>Systems</span><span>Algorithms</span>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- ============ PLAYGROUND ============ -->
-    <section class="section" id="playground">
-      <h2 class="section-title reveal"><span class="mono section-num">04.</span> <span class="scramble-on-view">Gradient Descent Playground</span></h2>
-      <p class="section-lede reveal">
-        Every model on this page learns the same way. Click anywhere on the loss surface
-        to drop an optimizer and watch it find a minimum. Crank the learning rate and watch it overshoot.
-      </p>
-      <div class="playground reveal">
-        <canvas id="gd-canvas" width="900" height="520"></canvas>
-        <div class="gd-controls mono">
-          <label class="gd-control">
-            <span>learning rate <b id="gd-lr-val">0.12</b></span>
-            <input type="range" id="gd-lr" min="0.01" max="0.60" step="0.01" value="0.12" data-hover />
-          </label>
-          <label class="gd-control gd-check" data-hover>
-            <input type="checkbox" id="gd-momentum" checked />
-            <span>momentum</span>
-          </label>
-          <button class="btn btn-ghost btn-sm" id="gd-reset" data-hover>reset</button>
-          <span class="gd-readout" id="gd-readout">click the surface to begin</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ CONTACT ============ -->
-    <section class="section section-contact" id="contact">
-      <h2 class="section-title reveal"><span class="mono section-num">05.</span> <span class="scramble-on-view">Contact</span></h2>
-      <p class="contact-lede reveal">
-        Open to research collaborations, interesting problems, and good conversations
-        about machines that learn.
-      </p>
-      <div class="contact-actions reveal">
-        <a class="btn btn-primary magnetic" href="mailto:amueller.mco@gmail.com" data-hover><span>Say hello</span></a>
-        <a class="btn btn-ghost magnetic" href="https://github.com/alexmueller07" target="_blank" rel="noopener" data-hover><span>GitHub</span></a>
-        <a class="btn btn-ghost magnetic" href="https://www.linkedin.com/in/alexander-mueller-021658307/" target="_blank" rel="noopener" data-hover><span>LinkedIn</span></a>
-      </div>
-      <p class="contact-converged mono reveal" id="converged-line">// loss converged. thanks for descending this far.</p>
-    </section>
-
-  </main>
-
-  <footer class="footer mono">
-    <span>designed &amp; built by Alexander Mueller</span>
-    <span class="footer-sep">·</span>
-    <a href="https://github.com/alexmueller07/alexmueller07.github.io" target="_blank" rel="noopener" data-hover>view source</a>
-  </footer>
+  <!-- prompt bar -->
+  <form class="prompt-bar" id="prompt-form" autocomplete="off">
+    <div class="prompt-chips" id="prompt-chips">
+      <button type="button" data-q="who">who?</button>
+      <button type="button" data-q="research">research</button>
+      <button type="button" data-q="github">github</button>
+      <button type="button" data-q="linkedin">linkedin</button>
+      <button type="button" data-q="email">email</button>
+    </div>
+    <div class="prompt-input-wrap">
+      <span class="prompt-sigil">▸</span>
+      <input type="text" id="prompt-input" placeholder="ask the model anything" maxlength="80" spellcheck="false" />
+      <button type="submit" class="prompt-run" aria-label="Run inference">run</button>
+    </div>
+  </form>
 
   <script src="js/main.js"></script>
 </body>

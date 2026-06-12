@@ -1,16 +1,19 @@
 # alexmueller07.github.io
 
-Personal website of Alexander Mueller. Live at [alexmueller07.github.io](https://alexmueller07.github.io).
+This is not a website. It is a small neural network trained on exactly one person.
 
-Hand-built with vanilla HTML, CSS, and JavaScript. No frameworks, no build step.
+Live at [alexmueller07.github.io](https://alexmueller07.github.io).
 
-Some things to play with on the page:
+There are no pages and nothing to scroll. The whole screen is an explorable network:
 
-- A "latent field" particle background that bends toward your cursor
-- A training monitor HUD that tracks your scroll as a decreasing loss curve
-- Decode-style text scrambles on headings
-- Animated mini-visualizations for each research area
-- An interactive gradient descent playground: click the loss surface, drop optimizers, tune the learning rate
+- Drag to pan, scroll to zoom
+- Click a labeled output neuron, or type a question in the prompt bar
+- Watch the forward pass ripple through the layers
+- The answer streams out of the decoder token by token
+
+Out-of-distribution questions get the uncertainty they deserve.
+
+Vanilla HTML, CSS, and JavaScript. No frameworks, no build step.
 
 ## Run locally
 

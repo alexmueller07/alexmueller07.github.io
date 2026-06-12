@@ -1,602 +1,594 @@
 /* ============================================================
-   Alexander Mueller · alexmueller07.github.io
-   All interactions, no frameworks.
+   alexmueller-v2
+   This is not a website. It is a small neural network that
+   answers questions about exactly one person. Pan it, zoom it,
+   poke its neurons, run inference.
    ============================================================ */
 
 (() => {
   "use strict";
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const isCoarse = window.matchMedia("(pointer: coarse)").matches;
 
   /* ============================================================
-     1. Latent field background
-     A drifting particle field that behaves like a 2D embedding
-     space: points cluster, connect to neighbors, and bend toward
-     the cursor like attention weights.
+     The model's entire knowledge
      ============================================================ */
-  const field = document.getElementById("field");
-  if (field && !reducedMotion) {
-    const ctx = field.getContext("2d");
-    let W, H, pts;
-    const mouse = { x: -9999, y: -9999 };
+  const KNOWLEDGE = {
+    who: {
+      label: "who",
+      color: "#22d3ee",
+      text: "Alexander Mueller. Computer science student at <hl>UW-Madison</hl>, leaning hard into AI research. I write <hl>Rust</hl> and <hl>Python</hl>. Based in the SF Bay Area.",
+      links: [],
+    },
+    research: {
+      label: "research",
+      color: "#8b5cf6",
+      text: "Currently poking at autonomous navigation, vision-language models, and continual learning. Mostly I just like teaching machines things and seeing what they forget.",
+      links: [],
+    },
+    github: {
+      label: "github",
+      color: "#f472b6",
+      text: "The code lives here. Rust, Python, and the occasional regrettable commit message.",
+      links: [["github.com/alexmueller07 ↗", "https://github.com/alexmueller07"]],
+    },
+    linkedin: {
+      label: "linkedin",
+      color: "#34d399",
+      text: "The professional version of me, with the job titles and the headshot.",
+      links: [["linkedin ↗", "https://www.linkedin.com/in/alexander-mueller-021658307/"]],
+    },
+    email: {
+      label: "email",
+      color: "#fbbf24",
+      text: "Human in the loop available at <hl>amueller.mco@gmail.com</hl>. Response latency varies.",
+      links: [["send email ↗", "mailto:amueller.mco@gmail.com"]],
+    },
+  };
 
-    const resize = () => {
-      W = field.width = window.innerWidth;
-      H = field.height = window.innerHeight;
-      const count = Math.min(140, Math.floor((W * H) / 14000));
-      pts = Array.from({ length: count }, () => ({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
-        r: Math.random() * 1.6 + 0.6,
-        hue: Math.random() < 0.7 ? 190 : 262, // cyan or violet
-      }));
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    window.addEventListener("pointermove", (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    });
-    window.addEventListener("pointerleave", () => {
-      mouse.x = -9999;
-      mouse.y = -9999;
-    });
-
-    const LINK = 110;
-    const tick = () => {
-      ctx.clearRect(0, 0, W, H);
-
-      for (const p of pts) {
-        // gentle attraction toward cursor
-        const dx = mouse.x - p.x;
-        const dy = mouse.y - p.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < 160 * 160 && d2 > 1) {
-          const d = Math.sqrt(d2);
-          p.vx += (dx / d) * 0.012;
-          p.vy += (dy / d) * 0.012;
-        }
-        p.vx *= 0.985;
-        p.vy *= 0.985;
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < -20) p.x = W + 20;
-        if (p.x > W + 20) p.x = -20;
-        if (p.y < -20) p.y = H + 20;
-        if (p.y > H + 20) p.y = -20;
-      }
-
-      // links
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const a = pts[i], b = pts[j];
-          const dx = a.x - b.x, dy = a.y - b.y;
-          const d2 = dx * dx + dy * dy;
-          if (d2 < LINK * LINK) {
-            const alpha = (1 - Math.sqrt(d2) / LINK) * 0.16;
-            ctx.strokeStyle = `hsla(${(a.hue + b.hue) / 2}, 85%, 65%, ${alpha})`;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      // nodes
-      for (const p of pts) {
-        ctx.fillStyle = `hsla(${p.hue}, 90%, 68%, 0.7)`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      requestAnimationFrame(tick);
-    };
-    tick();
-  }
-
-  /* ============================================================
-     2. Custom cursor
-     ============================================================ */
-  if (!isCoarse && !reducedMotion) {
-    const dot = document.querySelector(".cursor-dot");
-    const ring = document.querySelector(".cursor-ring");
-    let rx = -100, ry = -100, tx = -100, ty = -100;
-
-    window.addEventListener("pointermove", (e) => {
-      tx = e.clientX;
-      ty = e.clientY;
-      dot.style.transform = `translate(${tx}px, ${ty}px) translate(-50%, -50%)`;
-    });
-    const follow = () => {
-      rx += (tx - rx) * 0.16;
-      ry += (ty - ry) * 0.16;
-      ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%, -50%)`;
-      requestAnimationFrame(follow);
-    };
-    follow();
-
-    document.querySelectorAll("[data-hover]").forEach((el) => {
-      el.addEventListener("pointerenter", () => ring.classList.add("is-hover"));
-      el.addEventListener("pointerleave", () => ring.classList.remove("is-hover"));
-    });
-  }
-
-  /* ============================================================
-     3. Scramble / decode text effect
-     ============================================================ */
-  const GLYPHS = "ΑΒΓΔΕΖΗΘΛΞΠΣΦΨΩ01<>/\\{}[]#$%&*+=~";
-  function scramble(el, finalText, duration = 900) {
-    if (reducedMotion) { el.textContent = finalText; return; }
-    const start = performance.now();
-    const step = (now) => {
-      const t = Math.min(1, (now - start) / duration);
-      const settled = Math.floor(t * finalText.length);
-      let out = finalText.slice(0, settled);
-      for (let i = settled; i < finalText.length; i++) {
-        out += finalText[i] === " " ? " " : GLYPHS[(Math.random() * GLYPHS.length) | 0];
-      }
-      el.textContent = out;
-      if (t < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }
-
-  const heroName = document.getElementById("hero-name");
-  if (heroName) scramble(heroName, heroName.dataset.text, 1300);
-
-  /* ============================================================
-     4. Role rotator
-     ============================================================ */
-  const roles = [
-    "GNSS-denied UAV navigation",
-    "vision-language models",
-    "continual learning",
-    "affective computing",
-    "sensor fusion in Rust",
+  const ROUTES = [
+    [/who|about|you\b|name|alex|hello|hi\b|hey|intro/i, "who"],
+    [/research|ai\b|ml\b|paper|lab|stud|learn|model|science|interest/i, "research"],
+    [/github|git\b|code|project|repo|build|rust|python|program/i, "github"],
+    [/linkedin|job|hire|work|recruit|resume|cv\b|career|intern/i, "linkedin"],
+    [/email|contact|reach|mail|talk|message|connect/i, "email"],
   ];
-  const roleEl = document.getElementById("role-rotator");
-  if (roleEl && !reducedMotion) {
-    let idx = 0;
-    setInterval(() => {
-      idx = (idx + 1) % roles.length;
-      scramble(roleEl, roles[idx], 650);
-    }, 3200);
-  }
+
+  const OOD = [
+    'that one is out of distribution (p=0.04). my training set was exactly one guy. try: <hl>who</hl> · <hl>research</hl> · <hl>github</hl> · <hl>linkedin</hl> · <hl>email</hl>',
+    "I have 27 neurons and you're asking me that? stick to the chips below.",
+    "uncertain. very uncertain. I only know things about Alexander Mueller. ask about him.",
+    "gradient too steep, prediction refused. try <hl>who</hl> or <hl>github</hl>.",
+  ];
 
   /* ============================================================
-     5. Reveal on scroll + heading scrambles
+     Build the network
+     layers: 5 input · 7 hidden · 7 hidden · 5 labeled output
      ============================================================ */
-  const revealObserver = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) {
-          e.target.classList.add("visible");
-          const head = e.target.querySelector(".scramble-on-view");
-          if (head && !head.dataset.done) {
-            head.dataset.done = "1";
-            scramble(head, head.textContent, 700);
-          }
-          revealObserver.unobserve(e.target);
-        }
-      }
-    },
-    { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
-  );
-  document.querySelectorAll(".reveal").forEach((el, i) => {
-    el.style.transitionDelay = `${Math.min(i % 6, 4) * 60}ms`;
-    revealObserver.observe(el);
-  });
+  const LAYER_X = [-520, -170, 170, 520];
+  const LAYER_N = [5, 7, 7, 5];
+  const OUT_KEYS = ["who", "research", "github", "linkedin", "email"];
 
-  /* ============================================================
-     6. Nav: scrolled state + active section
-     ============================================================ */
-  const nav = document.getElementById("nav");
-  const navLinks = [...document.querySelectorAll(".nav-links a")];
-  const sections = navLinks
-    .map((a) => document.querySelector(a.getAttribute("href")))
-    .filter(Boolean);
-
-  const sectionObserver = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) {
-          navLinks.forEach((a) =>
-            a.classList.toggle("active", a.getAttribute("href") === `#${e.target.id}`)
-          );
-        }
-      }
-    },
-    { rootMargin: "-40% 0px -55% 0px" }
-  );
-  sections.forEach((s) => sectionObserver.observe(s));
-
-  /* ============================================================
-     7. Tilt cards
-     ============================================================ */
-  if (!isCoarse && !reducedMotion) {
-    document.querySelectorAll("[data-tilt]").forEach((card) => {
-      const target = card.classList.contains("xp") ? card.querySelector(".xp-body") : card;
-      card.addEventListener("pointermove", (e) => {
-        const r = card.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width - 0.5;
-        const py = (e.clientY - r.top) / r.height - 0.5;
-        target.style.transform = `perspective(900px) rotateY(${px * 6}deg) rotateX(${-py * 6}deg) translateY(-2px)`;
-      });
-      card.addEventListener("pointerleave", () => {
-        target.style.transform = "";
-      });
-    });
-  }
-
-  /* ============================================================
-     8. Magnetic buttons
-     ============================================================ */
-  if (!isCoarse && !reducedMotion) {
-    document.querySelectorAll(".magnetic").forEach((btn) => {
-      btn.addEventListener("pointermove", (e) => {
-        const r = btn.getBoundingClientRect();
-        const x = e.clientX - r.left - r.width / 2;
-        const y = e.clientY - r.top - r.height / 2;
-        btn.style.transform = `translate(${x * 0.18}px, ${y * 0.28}px)`;
-      });
-      btn.addEventListener("pointerleave", () => {
-        btn.style.transform = "";
-      });
-    });
-  }
-
-  /* ============================================================
-     9. Training monitor HUD
-     Scroll progress rendered as a training run: epoch = section,
-     loss decays as you descend the page.
-     ============================================================ */
-  const hud = document.getElementById("hud");
-  const hudEpoch = document.getElementById("hud-epoch");
-  const hudLoss = document.getElementById("hud-loss");
-  const spark = document.getElementById("hud-spark");
-  const sparkCtx = spark ? spark.getContext("2d") : null;
-  const lossHistory = [];
-
-  if (hud) setTimeout(() => hud.classList.add("on"), 900);
-
-  const timelineFill = document.getElementById("timeline-fill");
-  const timelineEl = document.querySelector(".timeline");
-
-  let hudTick = 0;
-  const onScroll = () => {
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    const t = max > 0 ? window.scrollY / max : 0;
-
-    if (nav) nav.classList.toggle("scrolled", window.scrollY > 40);
-
-    // HUD
-    if (hudLoss) {
-      const noise = reducedMotion ? 0 : (Math.random() - 0.5) * 0.004;
-      const loss = Math.max(0.0042, Math.exp(-3.2 * t) + noise);
-      hudLoss.textContent = loss.toFixed(4);
-      hudEpoch.textContent = `${Math.min(6, 1 + Math.floor(t * 6))} / 6`;
-
-      if (++hudTick % 3 === 0) {
-        lossHistory.push(loss);
-        if (lossHistory.length > 60) lossHistory.shift();
-        sparkCtx.clearRect(0, 0, spark.width, spark.height);
-        sparkCtx.strokeStyle = "#22d3ee";
-        sparkCtx.lineWidth = 1.5;
-        sparkCtx.beginPath();
-        lossHistory.forEach((v, i) => {
-          const x = (i / 59) * spark.width;
-          const y = spark.height - 3 - v * (spark.height - 6);
-          i === 0 ? sparkCtx.moveTo(x, y) : sparkCtx.lineTo(x, y);
-        });
-        sparkCtx.stroke();
-      }
-    }
-
-    // timeline fill
-    if (timelineFill && timelineEl) {
-      const r = timelineEl.getBoundingClientRect();
-      const progress = Math.min(1, Math.max(0, (window.innerHeight * 0.75 - r.top) / r.height));
-      timelineFill.style.height = `${progress * 100}%`;
-    }
+  // deterministic pseudo-random so the net looks the same every visit
+  let seed = 7;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
   };
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
 
-  /* ============================================================
-     10. Research card mini-visualizations
-     Each card gets a small living canvas tied to its topic.
-     Animations only run while the card is on screen.
-     ============================================================ */
-  const vizRunners = {
-    /* UAV trajectory + noisy estimate converging (sensor fusion) */
-    nav(ctx, w, h, t) {
-      ctx.clearRect(0, 0, w, h);
-      const path = (x) => h * 0.55 + Math.sin(x * 0.045 + t * 0.9) * h * 0.2;
-      // true path
-      ctx.strokeStyle = "rgba(139, 92, 246, 0.5)";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 5]);
-      ctx.beginPath();
-      for (let x = 0; x <= w; x += 4) {
-        const y = path(x);
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      // estimate path with decaying noise
-      ctx.strokeStyle = "#22d3ee";
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      for (let x = 0; x <= w; x += 4) {
-        const noise = Math.sin(x * 1.7 + t * 13) * 9 * (1 - x / w);
-        const y = path(x) + noise;
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      // drone
-      const dx = ((t * 40) % (w + 30)) - 15;
-      ctx.fillStyle = "#f472b6";
-      ctx.beginPath();
-      ctx.arc(dx, path(dx), 3.2, 0, Math.PI * 2);
-      ctx.fill();
-    },
-
-    /* image patches lighting up under attention (VLM) */
-    vlm(ctx, w, h, t) {
-      ctx.clearRect(0, 0, w, h);
-      const cols = 10, rows = 4;
-      const cw = w / cols, ch = h / rows;
-      const fx = (Math.sin(t * 0.7) * 0.5 + 0.5) * cols;
-      const fy = (Math.cos(t * 0.5) * 0.5 + 0.5) * rows;
-      for (let i = 0; i < cols; i++) {
-        for (let j = 0; j < rows; j++) {
-          const d = Math.hypot(i + 0.5 - fx, j + 0.5 - fy);
-          const a = Math.max(0.04, 0.85 * Math.exp(-d * d * 0.22));
-          ctx.fillStyle = `rgba(34, 211, 238, ${a})`;
-          ctx.fillRect(i * cw + 2, j * ch + 2, cw - 4, ch - 4);
-        }
-      }
-    },
-
-    /* task bars: old knowledge retained while new arrives (continual learning) */
-    cl(ctx, w, h, t) {
-      ctx.clearRect(0, 0, w, h);
-      const n = 7;
-      const bw = w / n;
-      for (let i = 0; i < n; i++) {
-        const phase = t * 1.4 - i * 0.85;
-        const grow = Math.min(1, Math.max(0, phase * 0.7));
-        const retain = 0.5 + 0.5 * Math.exp(-(Math.max(0, phase - 1.4)) * 0.12);
-        const bh = grow * retain * (h - 18);
-        const hue = 190 + i * 11;
-        ctx.fillStyle = `hsla(${hue}, 85%, 62%, ${0.25 + grow * 0.6})`;
-        ctx.fillRect(i * bw + 5, h - 6 - bh, bw - 10, bh);
-      }
-    },
-
-    /* two coupled waveforms drifting into sync (dyadic emotion) */
-    affect(ctx, w, h, t) {
-      ctx.clearRect(0, 0, w, h);
-      const sync = Math.sin(t * 0.35) * 0.5 + 0.5;
-      const wave = (off, color, yC) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        for (let x = 0; x <= w; x += 3) {
-          const y =
-            yC +
-            Math.sin(x * 0.06 + t * 2.4 + off * (1 - sync)) * h * 0.16 +
-            Math.sin(x * 0.013 + t * 1.1) * h * 0.07;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-        ctx.stroke();
+  const nodes = [];
+  const layers = LAYER_N.map((n, li) => {
+    const arr = [];
+    const spread = (n - 1) * 95;
+    for (let i = 0; i < n; i++) {
+      const node = {
+        layer: li,
+        x: LAYER_X[li] + (rand() - 0.5) * 36,
+        y: -spread / 2 + i * 95 + (rand() - 0.5) * 30,
+        r: li === LAYER_N.length - 1 ? 17 : 10 + rand() * 4,
+        act: 0.12 + rand() * 0.1,
+        phase: rand() * Math.PI * 2,
+        key: li === LAYER_N.length - 1 ? OUT_KEYS[i] : null,
+        color: li === LAYER_N.length - 1 ? KNOWLEDGE[OUT_KEYS[i]].color : null,
       };
-      wave(0, "rgba(34, 211, 238, 0.9)", h * (0.38 + 0.1 * sync));
-      wave(2.4, "rgba(244, 114, 182, 0.85)", h * (0.62 - 0.1 * sync));
-    },
-  };
-
-  document.querySelectorAll(".card-viz").forEach((canvas) => {
-    const kind = canvas.dataset.viz;
-    const run = vizRunners[kind];
-    if (!run) return;
-    const ctx = canvas.getContext("2d");
-    let raf = null;
-
-    const loop = () => {
-      run(ctx, canvas.width, canvas.height, performance.now() / 1000);
-      raf = requestAnimationFrame(loop);
-    };
-    if (reducedMotion) {
-      run(ctx, canvas.width, canvas.height, 1.5);
-      return;
+      arr.push(node);
+      nodes.push(node);
     }
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && raf === null) loop();
-      else if (!e.isIntersecting && raf !== null) {
-        cancelAnimationFrame(raf);
-        raf = null;
-      }
-    });
-    io.observe(canvas);
+    return arr;
   });
 
+  const edges = [];
+  for (let li = 0; li < layers.length - 1; li++) {
+    for (const a of layers[li]) {
+      for (const b of layers[li + 1]) {
+        if (rand() < 0.72) {
+          edges.push({ a, b, w: 0.25 + rand() * 0.75, heat: 0 });
+        }
+      }
+    }
+  }
+  // guarantee every node is connected
+  for (let li = 0; li < layers.length - 1; li++) {
+    for (const b of layers[li + 1]) {
+      if (!edges.some((e) => e.b === b)) {
+        const a = layers[li][(rand() * layers[li].length) | 0];
+        edges.push({ a, b, w: 0.6, heat: 0 });
+      }
+    }
+    for (const a of layers[li]) {
+      if (!edges.some((e) => e.a === a)) {
+        const b = layers[li + 1][(rand() * layers[li + 1].length) | 0];
+        edges.push({ a, b, w: 0.6, heat: 0 });
+      }
+    }
+  }
+
   /* ============================================================
-     11. Gradient descent playground
+     Canvas, camera, render loop
      ============================================================ */
-  const gd = document.getElementById("gd-canvas");
-  if (gd) {
-    const ctx = gd.getContext("2d");
-    const W = gd.width, H = gd.height;
-    const lrSlider = document.getElementById("gd-lr");
-    const lrVal = document.getElementById("gd-lr-val");
-    const momentumBox = document.getElementById("gd-momentum");
-    const resetBtn = document.getElementById("gd-reset");
-    const readout = document.getElementById("gd-readout");
+  const canvas = document.getElementById("net");
+  const ctx = canvas.getContext("2d");
+  let W = 0, H = 0, DPR = 1;
 
-    // domain
-    const X0 = -3, X1 = 3, Y0 = -1.75, Y1 = 1.75;
-    const toPx = (x, y) => [((x - X0) / (X1 - X0)) * W, ((y - Y0) / (Y1 - Y0)) * H];
-    const toXY = (px, py) => [X0 + (px / W) * (X1 - X0), Y0 + (py / H) * (Y1 - Y0)];
+  const cam = { x: 0, y: 40, k: 1 };
+  let userMoved = false;
 
-    // loss surface: shallow bowl with three basins
-    const f = (x, y) =>
-      0.08 * (x * x + y * y) -
-      1.0 * Math.exp(-(((x - 1.7) ** 2) + ((y - 0.7) ** 2)) / 0.55) -
-      1.35 * Math.exp(-(((x + 1.5) ** 2) + ((y + 0.55) ** 2)) / 0.7) -
-      0.75 * Math.exp(-(((x + 0.2) ** 2) + ((y - 1.0) ** 2)) / 0.35);
+  const resize = () => {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    if (!userMoved) fitView();
+  };
+  const fitView = () => {
+    const pad = 120;
+    const bw = LAYER_X[LAYER_X.length - 1] - LAYER_X[0] + 320; // room for labels
+    const bh = Math.max(...LAYER_N) * 95 + 120;
+    cam.k = Math.min((W - pad) / bw, (H - pad * 1.6) / bh);
+    cam.k = Math.max(0.3, Math.min(1.4, cam.k));
+    cam.x = 30; // nudge left so output labels fit
+    cam.y = -14;
+  };
+  window.addEventListener("resize", resize);
+  resize();
 
-    const grad = (x, y) => {
-      const e = 1e-4;
-      return [
-        (f(x + e, y) - f(x - e, y)) / (2 * e),
-        (f(x, y + e) - f(x, y - e)) / (2 * e),
-      ];
-    };
+  const toScreen = (x, y) => [W / 2 + (x - cam.x) * cam.k, H / 2 + (y - cam.y) * cam.k];
+  const toWorld = (sx, sy) => [(sx - W / 2) / cam.k + cam.x, (sy - H / 2) / cam.k + cam.y];
 
-    // pre-render contour heatmap to an offscreen canvas
-    const bg = document.createElement("canvas");
-    bg.width = W; bg.height = H;
-    const bctx = bg.getContext("2d");
-    const img = bctx.createImageData(W, H);
-    let fmin = Infinity, fmax = -Infinity;
-    const vals = new Float32Array(W * H);
-    for (let py = 0; py < H; py++) {
-      for (let px = 0; px < W; px++) {
-        const [x, y] = toXY(px, py);
-        const v = f(x, y);
-        vals[py * W + px] = v;
-        if (v < fmin) fmin = v;
-        if (v > fmax) fmax = v;
+  /* pulses travelling along edges */
+  const pulses = [];
+  const firePulse = (edge, strength, color) => {
+    pulses.push({ e: edge, t: 0, speed: 0.9 + Math.random() * 0.7, s: strength, c: color || null });
+  };
+
+  /* floating token labels shown entering the input layer */
+  let queryTokens = [];
+
+  /* scheduled forward-pass events */
+  const schedule = [];
+
+  let hoverNode = null;
+  let lastT = performance.now();
+
+  const draw = (now) => {
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+    const t = now / 1000;
+
+    // run scheduled events
+    for (let i = schedule.length - 1; i >= 0; i--) {
+      if (now >= schedule[i].at) {
+        schedule[i].fn();
+        schedule.splice(i, 1);
       }
     }
-    for (let i = 0; i < vals.length; i++) {
-      const t = (vals[i] - fmin) / (fmax - fmin); // 0 = deep minimum
-      const band = Math.abs(((t * 14) % 1) - 0.5); // contour banding
-      const edge = band < 0.06 ? 1 : 0;
-      // deep basins glow cyan/violet, high ground fades to dark navy
-      const r = Math.round(10 + 60 * t + edge * 30);
-      const g = Math.round(18 + (1 - t) * 120 + edge * 50);
-      const b = Math.round(40 + (1 - t) * 140 + edge * 60);
-      img.data[i * 4] = r;
-      img.data[i * 4 + 1] = g;
-      img.data[i * 4 + 2] = b;
-      img.data[i * 4 + 3] = 255;
+
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // soft vignette glow center
+    const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
+    g.addColorStop(0, "rgba(20, 30, 60, 0.35)");
+    g.addColorStop(1, "rgba(4, 6, 13, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // edges
+    for (const e of edges) {
+      const [x1, y1] = toScreen(e.a.x, e.a.y);
+      const [x2, y2] = toScreen(e.b.x, e.b.y);
+      e.heat = Math.max(0, e.heat - dt * 1.4);
+      const base = 0.09 + e.w * 0.11;
+      const alpha = Math.min(0.9, base + e.heat);
+      ctx.strokeStyle = e.heat > 0.05
+        ? `rgba(34, 211, 238, ${alpha})`
+        : `rgba(118, 150, 235, ${alpha})`;
+      ctx.lineWidth = (0.7 + e.w + e.heat * 1.5) * cam.k;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
     }
-    bctx.putImageData(img, 0, 0);
 
-    // optimizers
-    const COLORS = ["#22d3ee", "#f472b6", "#8b5cf6", "#34d399", "#fbbf24", "#60a5fa"];
-    let balls = [];
-    let colorIdx = 0;
+    // pulses
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      const p = pulses[i];
+      p.t += dt * p.speed;
+      if (p.t >= 1) {
+        p.e.b.act = Math.min(1.6, p.e.b.act + p.s * 0.5);
+        p.e.heat = Math.min(1, p.e.heat + 0.6);
+        pulses.splice(i, 1);
+        continue;
+      }
+      const x = p.e.a.x + (p.e.b.x - p.e.a.x) * p.t;
+      const y = p.e.a.y + (p.e.b.y - p.e.a.y) * p.t;
+      const [sx, sy] = toScreen(x, y);
+      const rad = (2.2 + p.s * 2.5) * cam.k;
+      ctx.fillStyle = p.c || "rgba(103, 232, 249, 0.95)";
+      ctx.shadowColor = p.c || "#22d3ee";
+      ctx.shadowBlur = 10 * cam.k;
+      ctx.beginPath();
+      ctx.arc(sx, sy, rad, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
 
-    const addBall = (x, y) => {
-      if (balls.length >= 6) balls.shift();
-      balls.push({ x, y, vx: 0, vy: 0, trail: [[x, y]], color: COLORS[colorIdx++ % COLORS.length], steps: 0, done: false });
-    };
+    // nodes
+    for (const n of nodes) {
+      n.act = Math.max(0.12, n.act - dt * 0.55);
+      const breathe = 1 + Math.sin(t * 1.3 + n.phase) * 0.06;
+      const [sx, sy] = toScreen(n.x, n.y);
+      const r = n.r * cam.k * breathe;
+      const glow = Math.min(1.4, n.act + (n === hoverNode ? 0.5 : 0));
+      const col = n.color || "#67c7f9";
 
-    gd.addEventListener("pointerdown", (e) => {
-      const r = gd.getBoundingClientRect();
-      const px = ((e.clientX - r.left) / r.width) * W;
-      const py = ((e.clientY - r.top) / r.height) * H;
-      const [x, y] = toXY(px, py);
-      addBall(x, y);
-    });
+      // halo
+      const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 3.4);
+      halo.addColorStop(0, hexA(col, 0.25 * glow));
+      halo.addColorStop(1, hexA(col, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(sx, sy, r * 3.4, 0, Math.PI * 2);
+      ctx.fill();
 
-    lrSlider.addEventListener("input", () => {
-      lrVal.textContent = Number(lrSlider.value).toFixed(2);
-    });
-    resetBtn.addEventListener("click", () => {
-      balls = [];
-      readout.textContent = "click the surface to begin";
-    });
+      // core
+      ctx.fillStyle = hexA(col, Math.min(1, 0.35 + glow * 0.55));
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
 
-    const drawFrame = () => {
-      ctx.drawImage(bg, 0, 0);
-
-      const lr = Number(lrSlider.value);
-      const useMomentum = momentumBox.checked;
-      const beta = useMomentum ? 0.82 : 0;
-
-      for (const ball of balls) {
-        if (!ball.done) {
-          for (let s = 0; s < 2; s++) {
-            const [gx, gy] = grad(ball.x, ball.y);
-            ball.vx = beta * ball.vx - lr * gx;
-            ball.vy = beta * ball.vy - lr * gy;
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-            ball.x = Math.max(X0, Math.min(X1, ball.x));
-            ball.y = Math.max(Y0, Math.min(Y1, ball.y));
-            ball.steps++;
-            ball.trail.push([ball.x, ball.y]);
-            if (ball.trail.length > 400) ball.trail.shift();
-            const gm = Math.hypot(gx, gy);
-            const vm = Math.hypot(ball.vx, ball.vy);
-            if ((gm < 0.004 && vm < 0.002) || ball.steps > 4000) ball.done = true;
-          }
-        }
-
-        // trail
-        ctx.strokeStyle = ball.color;
-        ctx.globalAlpha = 0.75;
-        ctx.lineWidth = 1.6;
+      // ring on output neurons
+      if (n.key) {
+        ctx.strokeStyle = hexA(col, 0.4 + glow * 0.4);
+        ctx.lineWidth = 1.5 * cam.k;
         ctx.beginPath();
-        ball.trail.forEach(([x, y], i) => {
-          const [px, py] = toPx(x, y);
-          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-        });
+        ctx.arc(sx, sy, r + 5 * cam.k, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.globalAlpha = 1;
 
-        // ball
-        const [bx, by] = toPx(ball.x, ball.y);
-        ctx.fillStyle = ball.color;
-        ctx.shadowColor = ball.color;
-        ctx.shadowBlur = 12;
-        ctx.beginPath();
-        ctx.arc(bx, by, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        if (ball.done) {
-          ctx.strokeStyle = ball.color;
-          ctx.globalAlpha = 0.5;
-          ctx.beginPath();
-          ctx.arc(bx, by, 10 + Math.sin(performance.now() / 300) * 2, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-        }
+        // label
+        ctx.font = `${Math.max(10, 13 * cam.k)}px "JetBrains Mono", monospace`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = hexA(col, 0.55 + glow * 0.45);
+        ctx.fillText(n.key, sx + r + 14 * cam.k, sy);
       }
+    }
 
-      const last = balls[balls.length - 1];
-      if (last) {
-        readout.textContent = `loss ${f(last.x, last.y).toFixed(4)} · step ${last.steps}${last.done ? " · converged" : ""}`;
+    // input-side query tokens
+    for (let i = queryTokens.length - 1; i >= 0; i--) {
+      const tok = queryTokens[i];
+      tok.life -= dt;
+      if (tok.life <= 0) {
+        queryTokens.splice(i, 1);
+        continue;
       }
-    };
+      const a = Math.min(1, tok.life);
+      const [sx, sy] = toScreen(tok.x, tok.y);
+      ctx.font = `${Math.max(9, 11.5 * cam.k)}px "JetBrains Mono", monospace`;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = `rgba(139, 92, 246, ${a * 0.95})`;
+      ctx.fillText(tok.s, sx - 16 * cam.k, sy);
+    }
 
-    // run only when visible
-    let gdRaf = null;
-    const gdLoop = () => {
-      drawFrame();
-      gdRaf = requestAnimationFrame(gdLoop);
-    };
-    const gdIo = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && gdRaf === null) gdLoop();
-      else if (!e.isIntersecting && gdRaf !== null) {
-        cancelAnimationFrame(gdRaf);
-        gdRaf = null;
+    // ambient activity
+    if (!reducedMotion && Math.random() < 0.09) {
+      firePulse(edges[(Math.random() * edges.length) | 0], 0.25);
+    }
+
+    requestAnimationFrame(draw);
+  };
+
+  function hexA(hex, a) {
+    const v = parseInt(hex.slice(1), 16);
+    return `rgba(${(v >> 16) & 255}, ${(v >> 8) & 255}, ${v & 255}, ${Math.max(0, Math.min(1, a))})`;
+  }
+
+  requestAnimationFrame(draw);
+
+  /* ============================================================
+     Pan / zoom / hover / click  (mouse + touch)
+     ============================================================ */
+  const pointers = new Map();
+  let dragDist = 0;
+  let pinchD0 = 0, pinchK0 = 1;
+
+  const nodeAt = (sx, sy) => {
+    const [wx, wy] = toWorld(sx, sy);
+    let best = null, bestD = Infinity;
+    for (const n of nodes) {
+      const d = Math.hypot(n.x - wx, n.y - wy);
+      if (d < Math.max(26, n.r * 2.2) && d < bestD) {
+        best = n;
+        bestD = d;
       }
+    }
+    return best;
+  };
+
+  canvas.addEventListener("pointerdown", (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    dragDist = 0;
+    if (pointers.size === 2) {
+      const [p1, p2] = [...pointers.values()];
+      pinchD0 = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+      pinchK0 = cam.k;
+    }
+    canvas.classList.add("dragging");
+  });
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (pointers.has(e.pointerId)) {
+      const prev = pointers.get(e.pointerId);
+      const dx = e.clientX - prev.x;
+      const dy = e.clientY - prev.y;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (pointers.size === 1) {
+        cam.x -= dx / cam.k;
+        cam.y -= dy / cam.k;
+        dragDist += Math.abs(dx) + Math.abs(dy);
+        userMoved = true;
+      } else if (pointers.size === 2) {
+        const [p1, p2] = [...pointers.values()];
+        const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        if (pinchD0 > 0) cam.k = clampK(pinchK0 * (d / pinchD0));
+        userMoved = true;
+        dragDist += 10;
+      }
+    } else {
+      hoverNode = nodeAt(e.clientX, e.clientY);
+      canvas.classList.toggle("over-node", !!(hoverNode && hoverNode.key));
+    }
+  });
+
+  const endPointer = (e) => {
+    pointers.delete(e.pointerId);
+    canvas.classList.remove("dragging");
+    if (pointers.size === 0 && dragDist < 6) {
+      const n = nodeAt(e.clientX, e.clientY);
+      if (n && n.key) runInference(n.key, n.key);
+      else if (n) firePulseBurst(n);
+    }
+  };
+  canvas.addEventListener("pointerup", endPointer);
+  canvas.addEventListener("pointercancel", endPointer);
+
+  const clampK = (k) => Math.max(0.25, Math.min(3, k));
+  canvas.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      const factor = Math.exp(-e.deltaY * 0.0012);
+      const [wx, wy] = toWorld(e.clientX, e.clientY);
+      cam.k = clampK(cam.k * factor);
+      // keep the point under the cursor fixed
+      const [sx2, sy2] = toScreen(wx, wy);
+      cam.x += (sx2 - e.clientX) / cam.k;
+      cam.y += (sy2 - e.clientY) / cam.k;
+      userMoved = true;
+      document.getElementById("hint").classList.add("faded");
+    },
+    { passive: false }
+  );
+
+  /* poking any unlabeled neuron sprays a little activity */
+  const firePulseBurst = (n) => {
+    n.act = 1.4;
+    for (const e of edges) {
+      if (e.a === n) firePulse(e, 0.8);
+    }
+  };
+
+  /* ============================================================
+     Inference
+     ============================================================ */
+  const decoder = document.getElementById("decoder");
+  const decoderOut = document.getElementById("decoder-out");
+  const decoderQuery = document.getElementById("decoder-query");
+  const decoderMeta = document.getElementById("decoder-meta");
+  const decoderLinks = document.getElementById("decoder-links");
+  const chips = [...document.querySelectorAll("#prompt-chips button")];
+
+  let typeTimer = null;
+  let passToken = 0; // invalidates older in-flight passes
+
+  function routeQuery(q) {
+    for (const [re, key] of ROUTES) if (re.test(q)) return key;
+    return null;
+  }
+
+  function runInference(rawQuery, key) {
+    const myToken = ++passToken;
+    const known = key && KNOWLEDGE[key];
+    const target = known ? layers[layers.length - 1][OUT_KEYS.indexOf(key)] : null;
+    const color = known ? KNOWLEDGE[key].color : "#f472b6";
+
+    // chip highlight
+    chips.forEach((c) => c.classList.toggle("lit", c.dataset.q === key));
+
+    // show the query tokens drifting into the input layer
+    queryTokens = rawQuery
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 5)
+      .map((s, i) => ({
+        s,
+        x: layers[0][Math.min(i, layers[0].length - 1)].x,
+        y: layers[0][Math.min(i, layers[0].length - 1)].y,
+        life: 1.6,
+      }));
+
+    // light up the input layer
+    for (const n of layers[0]) n.act = 1.2;
+
+    // staged forward pass: layer by layer
+    const STAGE = reducedMotion ? 0 : 380;
+    for (let li = 0; li < layers.length - 1; li++) {
+      schedule.push({
+        at: performance.now() + li * STAGE,
+        fn: () => {
+          if (myToken !== passToken) return;
+          const lastStage = li === layers.length - 2;
+          for (const e of edges) {
+            if (e.a.layer !== li) continue;
+            if (lastStage && target) {
+              // funnel into the target neuron
+              if (e.b === target) firePulse(e, 1.2, color);
+              else if (Math.random() < 0.25) firePulse(e, 0.2);
+            } else {
+              if (Math.random() < 0.85) firePulse(e, 0.5 + e.w * 0.5);
+            }
+          }
+        },
+      });
+    }
+
+    // bloom the answer
+    const settleAt = (layers.length - 1) * STAGE + (reducedMotion ? 0 : 500);
+    schedule.push({
+      at: performance.now() + settleAt,
+      fn: () => {
+        if (myToken !== passToken) return;
+        if (target) target.act = 1.6;
+        const conf = known ? (0.86 + Math.random() * 0.12) : 0.03 + Math.random() * 0.05;
+        const answer = known
+          ? KNOWLEDGE[key].text
+          : OOD[(Math.random() * OOD.length) | 0];
+        const links = known ? KNOWLEDGE[key].links : [];
+        typeOut(rawQuery, answer, links, conf, myToken);
+      },
     });
-    gdIo.observe(gd);
-    drawFrame();
+  }
 
-    // seed one demo ball so the section is alive before any click
-    addBall(2.45, -1.3);
+  function typeOut(query, html, links, conf, myToken) {
+    clearInterval(typeTimer);
+    decoder.classList.add("on", "firing");
+    decoderQuery.textContent = query;
+    decoderLinks.innerHTML = "";
+    decoderMeta.textContent = `p=${conf.toFixed(2)}`;
+
+    // tokenize while preserving <hl> markup
+    const parts = html.split(/(<hl>.*?<\/hl>)/g).flatMap((seg) => {
+      if (seg.startsWith("<hl>")) return [{ hl: true, s: seg.replace(/<\/?hl>/g, "") }];
+      return seg.split(/(\s+)/).filter(Boolean).map((s) => ({ hl: false, s }));
+    });
+
+    decoderOut.innerHTML = '<span class="caret"></span>';
+    const caret = decoderOut.querySelector(".caret");
+    let i = 0;
+
+    const step = () => {
+      if (myToken !== passToken) { clearInterval(typeTimer); return; }
+      if (i >= parts.length) {
+        clearInterval(typeTimer);
+        setTimeout(() => caret.remove(), 1200);
+        decoder.classList.remove("firing");
+        for (const [label, href] of links) {
+          const a = document.createElement("a");
+          a.href = href;
+          a.textContent = label;
+          if (!href.startsWith("mailto:")) {
+            a.target = "_blank";
+            a.rel = "noopener";
+          }
+          decoderLinks.appendChild(a);
+        }
+        return;
+      }
+      const part = parts[i++];
+      const span = document.createElement("span");
+      if (part.hl) span.className = "hl";
+      span.textContent = part.s;
+      decoderOut.insertBefore(span, caret);
+    };
+
+    if (reducedMotion) {
+      while (i < parts.length) step();
+      step();
+    } else {
+      typeTimer = setInterval(step, 38);
+    }
+  }
+
+  /* ============================================================
+     Prompt bar
+     ============================================================ */
+  const form = document.getElementById("prompt-form");
+  const input = document.getElementById("prompt-input");
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+    input.value = "";
+    runInference(q, routeQuery(q));
+  });
+
+  chips.forEach((c) =>
+    c.addEventListener("click", () => runInference(c.dataset.q, c.dataset.q))
+  );
+
+  /* ============================================================
+     Boot sequence
+     ============================================================ */
+  const boot = document.getElementById("boot");
+  const bootText = document.getElementById("boot-text");
+  const BOOT_LINES = [
+    ['loading <span class="name">alexmueller_v2.safetensors</span>', 90],
+    ['mounting 24 neurons, 1 owner <span class="ok">ok</span>', 240],
+    ['calibrating curiosity <span class="ok">ok</span>', 200],
+    ['<span class="ok">ready.</span> ask me anything.', 260],
+  ];
+
+  const finishBoot = () => {
+    boot.classList.add("off");
+    setTimeout(() => boot.remove(), 600);
+    // greet: run the identity query so visitors see content immediately
+    setTimeout(() => runInference("who are you", "who"), reducedMotion ? 100 : 500);
+    setTimeout(() => document.getElementById("hint").classList.add("faded"), 9000);
+  };
+
+  if (reducedMotion) {
+    finishBoot();
+  } else {
+    let li = 0;
+    const nextLine = () => {
+      if (li >= BOOT_LINES.length) {
+        setTimeout(finishBoot, 420);
+        return;
+      }
+      const [html, delay] = BOOT_LINES[li++];
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      bootText.appendChild(div);
+      setTimeout(nextLine, delay);
+    };
+    nextLine();
+    boot.addEventListener("click", finishBoot, { once: true });
   }
 })();
