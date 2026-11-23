@@ -38,7 +38,7 @@
       label: "linkedin",
       color: "#34d399",
       text: "The professional version of me, with the job titles and the headshot.",
-      links: [["linkedin ↗", "https://www.linkedin.com/in/alexander-mueller-021658307/"]],
+      links: [["linkedin ↗", "https://www.linkedin.com/in/alexandermuellerr"]],
     },
     email: {
       label: "email",
