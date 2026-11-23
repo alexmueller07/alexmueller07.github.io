@@ -43,8 +43,8 @@
     email: {
       label: "email",
       color: "#fbbf24",
-      text: "Human in the loop at <hl>amueller.mco@gmail.com</hl>. Low latency, fast replies.",
-      links: [["send email ↗", "mailto:amueller.mco@gmail.com"]],
+      text: "Human in the loop at <hl>admueller3@wisc.edu</hl>. Low latency, fast replies.",
+      links: [["send email ↗", "mailto:admueller3@wisc.edu"]],
     },
     help: {
       label: "help",

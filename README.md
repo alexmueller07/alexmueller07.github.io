@@ -8,7 +8,7 @@ The layout and look are adapted from [Will Huey's homepage](https://willhuey.com
 ```
 index.html          the page
 assets/site.css     styles
-assets/             favicon, photo and paper figures
+assets/             tab icon, photo and paper figures
 nn/                 the previous version of this site
 ```
 
@@ -20,7 +20,8 @@ python -m http.server 8000
 
 ## Updating
 
-- **Portrait:** the header uses `assets/alexander-mueller.jpg`. A line-drawing version is at `assets/alexander-mueller-drawing.png`; change the `avatar` image in `index.html` to switch.
+- **Photo:** the header uses `assets/alexander-mueller.jpg`. Replace that file to change it.
+- **Tab icon:** `favicon.ico` and the `favicon-*.png` / `apple-touch-icon.png` files in `assets/`, made from a drawing of me.
 - **CV:** save the PDF as `assets/cv.pdf`. The CV link in the header already points there.
 - **Paper links:** replace each greyed-out `arXiv` pill in `index.html` with the real link.
 - **News line and "Last updated":** both are plain text in `index.html`.
