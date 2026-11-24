@@ -1,0 +1,816 @@
+{
+ "built": "2026-11-25",
+ "r2": {
+  "min": 0.487,
+  "median": 0.939,
+  "max": 0.974
+ },
+ "groups": [
+  {
+   "id": "problem",
+   "kind": "wisdom",
+   "label": "Is discrimination a serious problem?"
+  },
+  {
+   "id": "belief",
+   "kind": "wisdom",
+   "label": "Beliefs about diversity and disparities"
+  },
+  {
+   "id": "policy",
+   "kind": "wisdom",
+   "label": "Support for policies"
+  },
+  {
+   "id": "behavior",
+   "kind": "wisdom",
+   "label": "Self-reported behavior"
+  },
+  {
+   "id": "act",
+   "kind": "wisdom",
+   "label": "Who should act?"
+  },
+  {
+   "id": "change",
+   "kind": "wisdom",
+   "label": "Demographic change"
+  },
+  {
+   "id": "context",
+   "kind": "outside",
+   "label": "Politics and demographics"
+  },
+  {
+   "id": "structure",
+   "kind": "outside",
+   "label": "Segregation and inequality"
+  },
+  {
+   "id": "health",
+   "kind": "outside",
+   "label": "Health"
+  },
+  {
+   "id": "social",
+   "kind": "outside",
+   "label": "Social capital"
+  },
+  {
+   "id": "mobility",
+   "kind": "outside",
+   "label": "Economic mobility"
+  },
+  {
+   "id": "policing",
+   "kind": "outside",
+   "label": "Policing"
+  }
+ ],
+ "sources": {
+  "wisdom": {
+   "name": "Wisconsin Diversity Opinion Maps (WISDOM)",
+   "org": "Institute for Diversity Science, UW\u2013Madison",
+   "vintage": "Ipsos KnowledgePanel survey, July 2026 (n = 4,775), MRP estimates",
+   "url": "https://ids.wisc.edu/wisconsin-diversity-maps/",
+   "note": "Modeled share of adults who agree. Read from the public map layer; the official data download has not been released yet."
+  },
+  "acs": {
+   "name": "American Community Survey 5-year estimates",
+   "org": "U.S. Census Bureau",
+   "vintage": "2020\u20132024",
+   "url": "https://www.census.gov/programs-surveys/acs",
+   "note": "Tables B01003, B03002, B05002, B15003, B17001, B19001, B19001B, B19001H, B19013, B19083."
+  },
+  "vote": {
+   "name": "2024 presidential returns by county",
+   "org": "Compiled by T. McGovern from state reporting",
+   "vintage": "2024",
+   "url": "https://github.com/tonmcg/US_County_Level_Election_Results_08-24",
+   "note": "Alaska reports by election district, so Alaska boroughs have no value."
+  },
+  "chr": {
+   "name": "County Health Rankings analytic data",
+   "org": "University of Wisconsin Population Health Institute",
+   "vintage": "2025 release",
+   "url": "https://www.countyhealthrankings.org/",
+   "note": "Race-specific values are suppressed where counts are small."
+  },
+  "sca": {
+   "name": "Social Capital Atlas",
+   "org": "Chetty et al. (2022), Opportunity Insights and Meta",
+   "vintage": "2022 release",
+   "url": "https://www.socialcapital.org/",
+   "note": "Uses 2018 county boundaries, so Connecticut planning regions have no value."
+  },
+  "oa": {
+   "name": "Opportunity Atlas county outcomes",
+   "org": "Opportunity Insights",
+   "vintage": "1978\u201383 birth cohorts",
+   "url": "https://www.opportunityatlas.org/",
+   "note": "Uses 2010 county boundaries."
+  },
+  "wapo": {
+   "name": "Fatal Force database",
+   "org": "The Washington Post",
+   "vintage": "2015\u20132024",
+   "url": "https://github.com/washingtonpost/data-police-shootings",
+   "note": "Fatal police shootings, placed in counties by their coordinates."
+  }
+ },
+ "vars": [
+  {
+   "key": "discrim_minority",
+   "label": "Discrimination against racial minorities is serious",
+   "group": "problem",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults answering yes.",
+   "q": "Is discrimination against racial/ethnic minority groups a serious problem in the US today?",
+   "nat": 67.0,
+   "n": 3143
+  },
+  {
+   "key": "discrim_women",
+   "label": "Discrimination against women is serious",
+   "group": "problem",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults answering yes.",
+   "q": "Is discrimination against women a serious problem in the US today?",
+   "nat": 53.5,
+   "n": 3143
+  },
+  {
+   "key": "discrim_religious",
+   "label": "Discrimination against religious minorities is serious",
+   "group": "problem",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults answering yes.",
+   "q": "Is discrimination against religious minorities (for example Jews, Muslims) a serious problem in the US today?",
+   "nat": 65.9,
+   "n": 3143
+  },
+  {
+   "key": "discrim_disability",
+   "label": "Discrimination against people with disabilities is serious",
+   "group": "problem",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults answering yes.",
+   "q": "Is discrimination against people with disabilities a serious problem in the US today?",
+   "nat": 54.3,
+   "n": 3143
+  },
+  {
+   "key": "discrim_lgbtq",
+   "label": "Discrimination against LGBTQ people is serious",
+   "group": "problem",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults answering yes.",
+   "q": "Is discrimination against LGBTQ people a serious problem in the US today?",
+   "nat": 58.3,
+   "n": 3143
+  },
+  {
+   "key": "discrim_immigrant",
+   "label": "Discrimination against immigrants is serious",
+   "group": "problem",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults answering yes.",
+   "q": "Is discrimination against immigrants a serious problem in the US today?",
+   "nat": 69.6,
+   "n": 3143
+  },
+  {
+   "key": "diversity_success",
+   "label": "Diversity helps companies succeed",
+   "group": "belief",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "Diversity of employee backgrounds \u2013 including race, gender, age, and life experiences \u2013 helps companies be more successful.",
+   "nat": 69.1,
+   "n": 3143
+  },
+  {
+   "key": "white_discrim_equal",
+   "label": "White people face as much discrimination",
+   "group": "belief",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "White people face as much discrimination as people of color in the U.S. today.",
+   "nat": 42.2,
+   "n": 3143
+  },
+  {
+   "key": "racial_disparities_societal",
+   "label": "Racial disparities are caused by society",
+   "group": "belief",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults placing the slider on the societal side of the midpoint.",
+   "q": "What are racial disparities in education and wealth due to? (slider from individual factors to societal factors)",
+   "nat": 59.8,
+   "n": 3143
+  },
+  {
+   "key": "favor_di_programs",
+   "label": "In favor of proven diversity programs",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I am in favor of diversity and inclusion programs that have been shown to be effective in rigorous evaluation studies.",
+   "nat": 71.3,
+   "n": 3143
+  },
+  {
+   "key": "fund_disparity_research",
+   "label": "Fund research on reducing disparities",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "We should fund more research on the best methods to reduce disparities between groups defined by race, gender, and other demographic characteristics.",
+   "nat": 63.2,
+   "n": 3143
+  },
+  {
+   "key": "training_blame_white",
+   "label": "Diversity training blames White people",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "Many diversity training workshops blame White people or try to make them feel guilty.",
+   "nat": 53.4,
+   "n": 3143
+  },
+  {
+   "key": "favor_protection_policies",
+   "label": "Protect minorities from discrimination",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I am in favor of policies that protect members of minority groups from discrimination.",
+   "nat": 83.4,
+   "n": 3143
+  },
+  {
+   "key": "affordable_housing_integration",
+   "label": "Affordable housing for racial integration",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "It is important to develop affordable housing options in middle-class neighborhoods to promote racial integration.",
+   "nat": 68.5,
+   "n": 3143
+  },
+  {
+   "key": "schools_not_teach_racism",
+   "label": "Schools need not teach history of racism",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "Public schools should not be required to teach the history of racism and discrimination in the U.S.",
+   "nat": 22.0,
+   "n": 3143
+  },
+  {
+   "key": "reduce_policing_disparities",
+   "label": "Reduce racial disparities in policing",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I support policies aimed at reducing racial disparities in policing.",
+   "nat": 80.2,
+   "n": 3143
+  },
+  {
+   "key": "reduce_health_disparities",
+   "label": "Reduce racial disparities in health",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I support policies aimed at reducing racial disparities in health outcomes.",
+   "nat": 83.0,
+   "n": 3143
+  },
+  {
+   "key": "equal_access_employment",
+   "label": "Equal access to employment",
+   "group": "policy",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I support policies that promote equality of access to employment regardless of race, gender, religion, disabilities, and sexual orientation.",
+   "nat": 89.6,
+   "n": 3143
+  },
+  {
+   "key": "welcoming_environment",
+   "label": "I create a welcoming environment",
+   "group": "behavior",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I frequently try to create a welcoming environment for individuals from other racial groups in my community.",
+   "nat": 87.4,
+   "n": 3143
+  },
+  {
+   "key": "confront_discrimination",
+   "label": "I would confront a friend who discriminates",
+   "group": "behavior",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I would confront a friend if they discriminated against someone else.",
+   "nat": 87.2,
+   "n": 3143
+  },
+  {
+   "key": "hesitant_biased_company",
+   "label": "Hesitant to work for a biased company",
+   "group": "behavior",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I would be hesitant to apply for a job at a company that is known to be biased against a particular social group defined by race, gender, or another demographic characteristic.",
+   "nat": 78.0,
+   "n": 3143
+  },
+  {
+   "key": "uncomfortable_interaction",
+   "label": "Uncomfortable interacting with other races",
+   "group": "behavior",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I feel uncomfortable interacting with people whose race or cultural background is different from my own.",
+   "nat": 15.1,
+   "n": 3143
+  },
+  {
+   "key": "officials_equal_opportunity",
+   "label": "Officials should legislate equal access",
+   "group": "act",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "Elected officials should put forth legislation that ensures equal access to personal and professional opportunity.",
+   "nat": 80.2,
+   "n": 3143
+  },
+  {
+   "key": "leaders_accountable_inclusion",
+   "label": "Leaders accountable for inclusion",
+   "group": "act",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "Leaders in organizations should be held accountable for fostering an inclusive workplace culture and achieving measurable diversity goals.",
+   "nat": 74.7,
+   "n": 3143
+  },
+  {
+   "key": "bothered_white_minority",
+   "label": "Bothered by White people becoming a minority",
+   "group": "change",
+   "unit": "%",
+   "dec": 1,
+   "src": "wisdom",
+   "desc": "Estimated share of adults who somewhat agree, agree or strongly agree.",
+   "q": "I am bothered by the projection that White people will eventually be a numerical minority in the U.S.",
+   "nat": 38.1,
+   "n": 3143
+  },
+  {
+   "key": "trump24",
+   "label": "Trump vote share, 2024",
+   "group": "context",
+   "unit": "%",
+   "dec": 1,
+   "src": "vote",
+   "desc": "Share of all presidential votes cast for Donald Trump in 2024.",
+   "n": 3116
+  },
+  {
+   "key": "ba_plus",
+   "label": "Adults with a bachelor's degree",
+   "group": "context",
+   "unit": "%",
+   "dec": 1,
+   "src": "acs",
+   "desc": "Share of adults 25 and older with a bachelor's degree or higher.",
+   "n": 3144
+  },
+  {
+   "key": "med_income",
+   "label": "Median household income",
+   "group": "context",
+   "unit": "$",
+   "dec": 0,
+   "src": "acs",
+   "desc": "Median household income in the past 12 months.",
+   "n": 3143
+  },
+  {
+   "key": "poverty",
+   "label": "Poverty rate",
+   "group": "context",
+   "unit": "%",
+   "dec": 1,
+   "src": "acs",
+   "desc": "Share of people below the federal poverty line.",
+   "n": 3144
+  },
+  {
+   "key": "density",
+   "label": "Population density",
+   "group": "context",
+   "unit": "per sq mi",
+   "dec": 1,
+   "src": "acs",
+   "desc": "Residents per square mile of land. Analysed on a log scale.",
+   "log": true,
+   "n": 3144
+  },
+  {
+   "key": "pct_nhwhite",
+   "label": "Non-Hispanic White residents",
+   "group": "context",
+   "unit": "%",
+   "dec": 1,
+   "src": "acs",
+   "desc": "Share of residents who are non-Hispanic White.",
+   "n": 3144
+  },
+  {
+   "key": "pct_black",
+   "label": "Black residents",
+   "group": "context",
+   "unit": "%",
+   "dec": 1,
+   "src": "acs",
+   "desc": "Share of residents who are non-Hispanic Black.",
+   "n": 3144
+  },
+  {
+   "key": "pct_hispanic",
+   "label": "Hispanic residents",
+   "group": "context",
+   "unit": "%",
+   "dec": 1,
+   "src": "acs",
+   "desc": "Share of residents who are Hispanic or Latino.",
+   "n": 3144
+  },
+  {
+   "key": "pct_foreign",
+   "label": "Foreign-born residents",
+   "group": "context",
+   "unit": "%",
+   "dec": 1,
+   "src": "acs",
+   "desc": "Share of residents born outside the United States.",
+   "n": 3144
+  },
+  {
+   "key": "diversity_index",
+   "label": "Racial and ethnic diversity index",
+   "group": "context",
+   "unit": "/100",
+   "dec": 1,
+   "src": "acs",
+   "desc": "Chance that two residents picked at random belong to different racial or ethnic groups.",
+   "n": 3144
+  },
+  {
+   "key": "ice_race_income",
+   "label": "Racialized economic segregation (ICE)",
+   "group": "structure",
+   "unit": "",
+   "dec": 3,
+   "src": "acs",
+   "desc": "Index of Concentration at the Extremes: high-income White households minus low-income Black households, over all households. From \u22121 (deprived) to +1 (privileged). The exposure in Zhang et al. (2023).",
+   "n": 3144
+  },
+  {
+   "key": "ice_income",
+   "label": "Income concentration (ICE)",
+   "group": "structure",
+   "unit": "",
+   "dec": 3,
+   "src": "acs",
+   "desc": "Households earning $100,000 or more minus households under $25,000, over all households.",
+   "n": 3144
+  },
+  {
+   "key": "seg_bw",
+   "label": "Black/White residential segregation",
+   "group": "structure",
+   "unit": "/100",
+   "dec": 1,
+   "src": "chr",
+   "desc": "Dissimilarity index: share of either group that would have to move for an even spread.",
+   "n": 2064
+  },
+  {
+   "key": "school_seg",
+   "label": "School segregation",
+   "group": "structure",
+   "unit": "",
+   "dec": 2,
+   "src": "chr",
+   "desc": "How unevenly students of different races are spread across schools. 0 is even, 1 is fully segregated.",
+   "n": 2931
+  },
+  {
+   "key": "gini",
+   "label": "Income inequality (Gini)",
+   "group": "structure",
+   "unit": "",
+   "dec": 3,
+   "src": "acs",
+   "desc": "Gini index of household income. 0 is perfect equality.",
+   "n": 3144
+  },
+  {
+   "key": "inc_ratio_bw",
+   "label": "Black-to-White household income ratio",
+   "group": "structure",
+   "unit": "\u00d7",
+   "dec": 2,
+   "src": "chr",
+   "desc": "Median Black household income divided by median White household income.",
+   "n": 1767
+  },
+  {
+   "key": "pay_gap",
+   "label": "Women's pay per dollar of men's",
+   "group": "structure",
+   "unit": "$",
+   "dec": 2,
+   "src": "chr",
+   "desc": "Women's median earnings for each dollar of men's median earnings.",
+   "n": 3135
+  },
+  {
+   "key": "life_exp",
+   "label": "Life expectancy",
+   "group": "health",
+   "unit": "yrs",
+   "dec": 1,
+   "src": "chr",
+   "desc": "Average years a person can expect to live.",
+   "n": 3060
+  },
+  {
+   "key": "prem_mort",
+   "label": "Premature death rate",
+   "group": "health",
+   "unit": "per 100k",
+   "dec": 0,
+   "src": "chr",
+   "desc": "Age-adjusted deaths before age 75 per 100,000 residents.",
+   "n": 3080
+  },
+  {
+   "key": "le_gap_bw",
+   "label": "White\u2013Black life expectancy gap",
+   "group": "health",
+   "unit": "yrs",
+   "dec": 1,
+   "src": "chr",
+   "desc": "White life expectancy minus Black life expectancy. The outcome family in Leitner et al. (2016).",
+   "n": 1267
+  },
+  {
+   "key": "prem_ratio_bw",
+   "label": "Black-to-White premature death ratio",
+   "group": "health",
+   "unit": "\u00d7",
+   "dec": 2,
+   "src": "chr",
+   "desc": "Black premature death rate divided by the White rate.",
+   "n": 1433
+  },
+  {
+   "key": "infant_mort",
+   "label": "Infant mortality",
+   "group": "health",
+   "unit": "per 1k",
+   "dec": 1,
+   "src": "chr",
+   "desc": "Infant deaths per 1,000 live births.",
+   "n": 1172
+  },
+  {
+   "key": "uninsured",
+   "label": "Uninsured under 65",
+   "group": "health",
+   "unit": "%",
+   "dec": 1,
+   "src": "chr",
+   "desc": "Share of residents under 65 without health insurance.",
+   "n": 3143
+  },
+  {
+   "key": "mental_days",
+   "label": "Poor mental health days",
+   "group": "health",
+   "unit": "days",
+   "dec": 1,
+   "src": "chr",
+   "desc": "Average mentally unhealthy days reported in the past 30.",
+   "n": 3144
+  },
+  {
+   "key": "child_pov",
+   "label": "Children in poverty",
+   "group": "health",
+   "unit": "%",
+   "dec": 1,
+   "src": "chr",
+   "desc": "Share of people under 18 in poverty.",
+   "n": 3143
+  },
+  {
+   "key": "homicide",
+   "label": "Homicide rate",
+   "group": "health",
+   "unit": "per 100k",
+   "dec": 1,
+   "src": "chr",
+   "desc": "Deaths by homicide per 100,000 residents.",
+   "n": 1425
+  },
+  {
+   "key": "ec",
+   "label": "Economic connectedness",
+   "group": "social",
+   "unit": "",
+   "dec": 2,
+   "src": "sca",
+   "desc": "How many high-income friends low-income residents have, relative to an even mix. The headline measure in Chetty et al. (2022).",
+   "n": 3009
+  },
+  {
+   "key": "exposure",
+   "label": "Exposure to high-income people",
+   "group": "social",
+   "unit": "",
+   "dec": 2,
+   "src": "sca",
+   "desc": "Share of high-income people in low-income residents' groups, relative to an even mix.",
+   "n": 3003
+  },
+  {
+   "key": "friend_bias",
+   "label": "Friending bias",
+   "group": "social",
+   "unit": "",
+   "dec": 3,
+   "src": "sca",
+   "desc": "How much less low-income residents befriend the high-income people they are exposed to.",
+   "n": 3003
+  },
+  {
+   "key": "clustering",
+   "label": "Friendship clustering",
+   "group": "social",
+   "unit": "",
+   "dec": 3,
+   "src": "sca",
+   "desc": "How often two friends of a person are friends with each other.",
+   "n": 3080
+  },
+  {
+   "key": "support_ratio",
+   "label": "Support ratio",
+   "group": "social",
+   "unit": "",
+   "dec": 2,
+   "src": "sca",
+   "desc": "Share of friendships where the pair has at least one friend in common.",
+   "n": 3080
+  },
+  {
+   "key": "volunteering",
+   "label": "Volunteering rate",
+   "group": "social",
+   "unit": "%",
+   "dec": 1,
+   "src": "sca",
+   "desc": "Share of Facebook users in volunteering or activism groups.",
+   "n": 3080
+  },
+  {
+   "key": "civic_orgs",
+   "label": "Civic organizations",
+   "group": "social",
+   "unit": "per 1k",
+   "dec": 2,
+   "src": "sca",
+   "desc": "Facebook pages of civic organizations per 1,000 users.",
+   "n": 3080
+  },
+  {
+   "key": "turnout",
+   "label": "Voter turnout",
+   "group": "social",
+   "unit": "%",
+   "dec": 1,
+   "src": "chr",
+   "desc": "Share of citizens 18 and older who voted in the 2020 presidential election.",
+   "n": 3104
+  },
+  {
+   "key": "mobility",
+   "label": "Upward mobility",
+   "group": "mobility",
+   "unit": "pctile",
+   "dec": 1,
+   "src": "oa",
+   "desc": "Average adult income percentile of children raised by parents at the 25th percentile.",
+   "n": 3128
+  },
+  {
+   "key": "mobility_gap_bw",
+   "label": "White\u2013Black mobility gap",
+   "group": "mobility",
+   "unit": "pctile",
+   "dec": 1,
+   "src": "oa",
+   "desc": "White minus Black adult income percentile for children raised at the 25th percentile.",
+   "n": 1907
+  },
+  {
+   "key": "police_rate",
+   "label": "Fatal police shootings",
+   "group": "policing",
+   "unit": "per 1M/yr",
+   "dec": 2,
+   "src": "wapo",
+   "desc": "People shot and killed by police per million residents per year, 2015\u20132024.",
+   "n": 3144
+  },
+  {
+   "key": "police_black_disp",
+   "label": "Black over-representation in police shootings",
+   "group": "policing",
+   "unit": "pts",
+   "dec": 1,
+   "src": "wapo",
+   "desc": "Black share of people shot and killed by police minus the Black share of residents. Shown where at least 10 deaths have a known race. The outcome family in Hehman et al. (2018).",
+   "n": 177
+  }
+ ],
+ "controls": [
+  "trump24",
+  "ba_plus",
+  "pct_nhwhite",
+  "density",
+  "med_income"
+ ],
+ "police": {
+  "total": 10430,
+  "located": 9609,
+  "counties_with_disp": 177
+ }
+}

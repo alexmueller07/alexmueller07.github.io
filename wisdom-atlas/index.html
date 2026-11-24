@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>WISDOM Correlation Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* One light theme by choice: a printed statistical atlas. Cool paper, navy ink, survey blue for data, one orange for "the place you picked". */
+  /* Layout: fixed masthead; each view is a three-part sheet: controls | plate | reading panel. */
+  color-scheme: light;
+  --paper: #eef0ee;
+  --sheet: #fcfcfb;
+  --ink: #0f1c2b;
+  --ink-2: #47525e;
+  --muted: #7d858c;
+  --rule: #d9ddda;
+  --accent: #1c5cab;
+  --accent-soft: #e3edf9;
+  --mark: #eb6834;
+  --pos: #256abf;
+  --neg: #cf4040;
+  --font-display: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--paper); color: var(--ink); font: 14px/1.45 var(--font-body); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+button, select, input { font: inherit; color: inherit; }
+h1, h2, h3, h4, p { margin: 0; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--mark); outline-offset: 2px; }
+
+/* masthead */
+.top { display: flex; align-items: center; gap: 20px; padding: 0 20px; height: 58px; flex: none; background: var(--ink); color: #f3f5f4; }
+.brand { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+.brand b { font: 700 21px/1 var(--font-display); letter-spacing: -0.02em; }
+.brand span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #ffb48f; border: 1px solid #ffb48f66; padding: 2px 7px; border-radius: 3px; }
+.nav { display: flex; gap: 2px; margin-left: 8px; }
+.nav a { color: #c6ced6; text-decoration: none; padding: 19px 13px 16px; border-bottom: 3px solid transparent; font-weight: 500; }
+.nav a:hover { color: #fff; }
+.nav a.on { color: #fff; border-bottom-color: var(--mark); }
+.top .sp { flex: 1; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--sheet); }
+.seg button { border: 0; background: transparent; padding: 5px 11px; cursor: pointer; color: var(--ink-2); }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button.on { background: var(--ink); color: #fff; }
+.top .seg { border-color: #ffffff40; background: transparent; }
+.top .seg button { color: #c6ced6; }
+.top .seg button + button { border-left-color: #ffffff40; }
+.top .seg button.on { background: #f3f5f4; color: var(--ink); }
+
+main { flex: 1; min-height: 0; }
+.view { display: none; height: 100%; }
+.view.on { display: grid; }
+.rail { background: var(--sheet); overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 18px; }
+.rail.l { border-right: 1px solid var(--rule); }
+.rail.r { border-left: 1px solid var(--rule); }
+.plate { min-width: 0; overflow: auto; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }
+#v-map, #v-correlate { grid-template-columns: 300px minmax(0, 1fr) 372px; }
+#v-matrix { grid-template-columns: 300px minmax(0, 1fr); }
+#v-methods { display: none; overflow-y: auto; }
+#v-methods.on { display: block; }
+
+.lbl { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
+select, input[type=text], input[type=search] { width: 100%; padding: 7px 9px; border: 1px solid var(--rule); border-radius: 6px; background: #fff; }
+.hint { color: var(--ink-2); font-size: 12.5px; }
+.note { font-size: 12px; color: var(--muted); }
+.chk { display: flex; gap: 8px; align-items: flex-start; padding: 3px 0; cursor: pointer; }
+.chk input { margin-top: 3px; accent-color: var(--accent); }
+fieldset { border: 0; padding: 0; margin: 0; }
+legend { padding: 0; }
+.btn { border: 1px solid var(--rule); background: #fff; border-radius: 6px; padding: 6px 11px; cursor: pointer; }
+.btn:hover { border-color: var(--ink-2); }
+.stack { display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; gap: 8px; align-items: center; }
+
+/* map plate */
+.headline { font: 600 clamp(19px, 2.1vw, 27px)/1.15 var(--font-display); letter-spacing: -0.015em; text-wrap: balance; max-width: 30em; }
+.sub { color: var(--ink-2); font-size: 13px; }
+.sub b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.mapwrap { position: relative; flex: 1; min-height: 320px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+#map { width: 100%; height: 100%; display: block; cursor: grab; }
+#map path.c, #map path.s { stroke: var(--sheet); stroke-width: .25px; vector-effect: non-scaling-stroke; }
+#map path.s { stroke-width: .8px; }
+#map .mesh { fill: none; stroke: #fff; stroke-width: .9px; vector-effect: non-scaling-stroke; pointer-events: none; }
+#map .selo { fill: none; stroke: var(--mark); stroke-width: 2.4px; vector-effect: non-scaling-stroke; pointer-events: none; }
+.legend { position: absolute; left: 14px; bottom: 12px; background: #fcfcfbee; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--rule); font-size: 11.5px; color: var(--ink-2); }
+.legend svg { display: block; }
+.zoomhint { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
+.rank { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 13px; }
+.rank button { all: unset; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank button:hover { color: var(--accent); text-decoration: underline; }
+.rank span { font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right; }
+.results { border: 1px solid var(--rule); border-radius: 6px; margin-top: 4px; background: #fff; max-height: 220px; overflow: auto; }
+.results button { all: unset; display: block; width: 100%; box-sizing: border-box; padding: 6px 9px; cursor: pointer; }
+.results button:hover, .results button:focus-visible { background: var(--accent-soft); }
+
+/* profile */
+.pname { font: 700 24px/1.1 var(--font-display); letter-spacing: -0.02em; }
+.big { font: 700 44px/1 var(--font-display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.key { display: flex; gap: 14px; font-size: 11.5px; color: var(--ink-2); flex-wrap: wrap; }
+.key i { display: inline-block; vertical-align: -1px; margin-right: 4px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+.ring { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink-2); background: var(--sheet); }
+.tick { width: 2px; height: 11px; background: var(--ink); }
+.gh { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 12px 0 3px; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 96px 50px; gap: 8px; align-items: center; padding: 2.5px 4px; margin: 0 -4px; border-radius: 4px; cursor: pointer; font-size: 12.5px; }
+.it:hover { background: var(--accent-soft); }
+.it.cur { background: var(--accent-soft); font-weight: 600; }
+.it > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.it .val { text-align: right; font-variant-numeric: tabular-nums; }
+.trk { position: relative; height: 12px; }
+.trk::before { content: ""; position: absolute; left: 0; right: 0; top: 5.5px; height: 1px; background: var(--rule); }
+.trk i { position: absolute; top: 1.5px; transform: translateX(-50%); }
+.trk i.tick { top: .5px; }
+.bar { height: 6px; background: #e7eae8; border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: #9fb3c9; border-radius: 3px; }
+
+/* correlate */
+.rbig { font: 800 64px/0.95 var(--font-display); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.rbig small { font: 500 15px/1 var(--font-body); letter-spacing: 0; color: var(--ink-2); margin-right: 6px; }
+.ladder { display: grid; grid-template-columns: minmax(0, 1fr) 110px 48px; gap: 7px 8px; align-items: center; font-size: 12.5px; }
+.ladder .lt { position: relative; height: 14px; background: linear-gradient(var(--rule), var(--rule)) 50% 0 / 1px 100% no-repeat; }
+.ladder .lt i { position: absolute; top: 3px; height: 8px; border-radius: 2px; }
+.ladder .lt u { position: absolute; top: 6.5px; height: 1.5px; background: var(--ink); }
+.ladder .v { text-align: right; font-variant-numeric: tabular-nums; }
+.ladder .fin { font-weight: 700; }
+.card { border: 1px solid var(--rule); border-radius: 8px; padding: 13px 14px; background: #fff; }
+.card h3 { font: 600 15px/1.2 var(--font-display); margin-bottom: 8px; }
+.scwrap { flex: 1; min-height: 340px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; position: relative; }
+#scatter { width: 100%; height: 100%; display: block; }
+#scatter .axis path, #scatter .axis line { stroke: #c9cecb; }
+#scatter .axis text { fill: var(--ink-2); font: 11px var(--font-body); font-variant-numeric: tabular-nums; }
+#scatter .grid line { stroke: #e9ecea; }
+#scatter .axl { fill: var(--ink); font: 600 12px var(--font-body); }
+#scatter circle { fill: var(--accent); fill-opacity: .42; stroke: var(--sheet); stroke-width: .6px; cursor: pointer; }
+#scatter circle.dim { fill: #9aa3ab; fill-opacity: .12; }
+#scatter circle.sel { fill: var(--mark); fill-opacity: 1; stroke: var(--ink); stroke-width: 1.5px; }
+#scatter .fit { stroke: var(--ink); stroke-width: 1.6px; fill: none; }
+.outl { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 12.5px; }
+.outl button { all: unset; cursor: pointer; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.outl button:hover { color: var(--accent); text-decoration: underline; }
+
+/* matrix */
+#matrix text { font: 11px var(--font-body); fill: var(--ink); }
+#matrix .gl { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; fill: var(--muted); }
+#matrix rect.cell { cursor: pointer; }
+#matrix rect.cell:hover { stroke: var(--ink); stroke-width: 1.5px; }
+.finding { font: 500 clamp(17px, 1.7vw, 22px)/1.25 var(--font-display); letter-spacing: -0.01em; max-width: 38em; text-wrap: balance; }
+.finding b { font-weight: 800; }
+
+/* methods */
+.doc { max-width: 1060px; margin: 0 auto; padding: 34px 24px 70px; display: flex; flex-direction: column; gap: 30px; }
+.doc h1 { font: 800 clamp(30px, 4vw, 46px)/1.02 var(--font-display); letter-spacing: -0.03em; max-width: 16em; text-wrap: balance; }
+.doc h2 { font: 700 21px/1.2 var(--font-display); letter-spacing: -0.01em; margin-bottom: 10px; }
+.doc p, .doc li { max-width: 68ch; }
+.doc ol, .doc ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; background: var(--sheet); }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+th { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.warnbox { border-left: 4px solid var(--mark); background: #fff; padding: 14px 16px; border-radius: 0 8px 8px 0; }
+
+#tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12.5px; line-height: 1.35; max-width: 300px; box-shadow: 0 4px 14px #0f1c2b33; display: none; }
+#tip b { display: block; }
+#tip span { color: #c6ced6; }
+#copybox { position: fixed; inset: 0; background: #0f1c2b99; display: none; align-items: center; justify-content: center; z-index: 30; padding: 20px; }
+#copybox .card { width: min(720px, 100%); display: flex; flex-direction: column; gap: 10px; }
+#copybox textarea { width: 100%; height: 300px; font: 12px ui-monospace, monospace; }
+#loading { padding: 40px; font: 600 18px var(--font-display); }
+
+@media (max-width: 1180px) {
+  #v-map, #v-correlate { grid-template-columns: 270px minmax(0, 1fr); overflow-y: auto; }
+  #v-map .rail.r, #v-correlate .rail.r { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--rule); overflow: visible; }
+}
+@media (max-width: 760px) {
+  .top { height: auto; flex-wrap: wrap; padding: 10px 16px 0; gap: 8px 14px; }
+  .nav { margin-left: 0; order: 3; width: 100%; overflow-x: auto; }
+  .nav a { padding: 10px 11px 8px; }
+  .view.on { display: block; overflow-y: auto; }
+  .rail, .plate { overflow: visible; border: 0; }
+  .brand { flex-wrap: wrap; white-space: normal; }
+  .mapwrap { min-height: 0; height: auto; flex: none; display: flex; flex-direction: column; }
+  #map { height: 64vw; }
+  .legend { position: static; border: 0; }
+  .zoomhint { position: static; padding: 0 10px 10px; }
+  .scwrap { height: 90vw; flex: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><b>WISDOM Correlation Atlas</b><span>Unofficial prototype</span></div>
+  <nav class="nav" aria-label="Views">
+    <a href="#map" data-view="map">Map</a>
+    <a href="#correlate" data-view="correlate">Correlate</a>
+    <a href="#matrix" data-view="matrix">Matrix</a>
+    <a href="#methods" data-view="methods">Data and methods</a>
+  </nav>
+  <div class="sp"></div>
+  <div class="seg" id="geo" role="group" aria-label="Geography"><button data-v="county">Counties</button><button data-v="state">States</button></div>
+</header>
+
+<main>
+<div id="loading">Loading 3,144 counties…</div>
+
+<!-- ============================== MAP ============================== -->
+<section class="view" id="v-map">
+  <aside class="rail l">
+    <div><label class="lbl" for="mapvar">Show on the map</label><select id="mapvar"></select></div>
+    <div><span class="lbl">Shade by</span>
+      <div class="seg" id="mapscale"><button data-v="seq">Value</button><button data-v="div">Gap from U.S.</button></div></div>
+    <div><label class="lbl" for="statefilter">Zoom to a state</label><select id="statefilter"></select></div>
+    <div><label class="lbl" for="search">Find a place</label>
+      <input type="search" id="search" placeholder="Try Dane, Cook, Maricopa…" autocomplete="off">
+      <div class="results" id="results" hidden></div></div>
+    <div><span class="lbl" id="rank-h">Highest</span><div class="rank" id="rank-hi"></div></div>
+    <div><span class="lbl">Lowest</span><div class="rank" id="rank-lo"></div></div>
+  </aside>
+  <div class="plate">
+    <div><h1 class="headline" id="map-h"></h1><p class="sub" id="map-sub"></p></div>
+    <div class="mapwrap">
+      <svg id="map" viewBox="0 0 975 610" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of the selected measure"></svg>
+      <div class="legend" id="legend"></div>
+      <div class="zoomhint"><button class="btn" id="zoom-reset">Reset view</button></div>
+    </div>
+  </div>
+  <aside class="rail r" id="profile"></aside>
+</section>
+
+<!-- ============================== CORRELATE ============================== -->
+<section class="view" id="v-correlate">
+  <aside class="rail l">
+    <div><label class="lbl" for="xvar">Across (x)</label><select id="xvar"></select></div>
+    <div><label class="lbl" for="yvar">Up (y)</label><select id="yvar"></select></div>
+    <div class="row"><button class="btn" id="swap">Swap axes</button><button class="btn" id="copy-pair">Copy data as CSV</button></div>
+    <div id="model-slot-correlate"></div>
+    <div><span class="lbl">Plot</span>
+      <div class="seg" id="plotmode"><button data-v="raw">Raw values</button><button data-v="adj">After adjustment</button></div></div>
+  </aside>
+  <div class="plate">
+    <div><h1 class="headline" id="sc-h"></h1><p class="sub" id="sc-sub"></p></div>
+    <div class="scwrap"><svg id="scatter" role="img" aria-label="Scatterplot of the two selected measures"></svg></div>
+    <p class="note">Each dot is one place, sized by population. The line is the straight-line fit to the dots as plotted. Click a dot to select it.</p>
+  </div>
+  <aside class="rail r">
+    <div>
+      <div class="rbig" id="r-big"></div>
+      <p class="hint" id="r-ci" style="margin-top:6px"></p>
+    </div>
+    <p id="r-words"></p>
+    <div class="card"><h3>What survives each step</h3><div class="ladder" id="ladder"></div>
+      <p class="note" style="margin-top:9px">Bars run from −1 to +1. The whisker on the last row is a 95% interval from resampling whole states.</p></div>
+    <div class="card"><h3>Places off the pattern</h3><div class="outl" id="outliers"></div></div>
+    <div class="card" id="sel-card"></div>
+  </aside>
+</section>
+
+<!-- ============================== MATRIX ============================== -->
+<section class="view" id="v-matrix">
+  <aside class="rail l">
+    <div><span class="lbl">Show</span>
+      <div class="seg" id="mmode"><button data-v="simple">Simple r</button><button data-v="adj">Adjusted r</button></div></div>
+    <div><span class="lbl">Columns</span>
+      <div class="seg" id="mcols"><button data-v="outside">Outside measures</button><button data-v="wisdom">WISDOM items</button></div></div>
+    <div id="model-slot-matrix"></div>
+    <div id="mlegend"></div>
+    <p class="hint">Click any cell to open that pair in Correlate.</p>
+    <p class="note">In the adjusted view, a measure that is itself held constant is left out of the controls for its own column.</p>
+  </aside>
+  <div class="plate">
+    <p class="finding" id="finding"></p>
+    <div style="overflow:auto; background:var(--sheet); border:1px solid var(--rule); border-radius:8px; padding:10px 14px"><svg id="matrix"></svg></div>
+  </div>
+</section>
+
+<!-- ============================== METHODS ============================== -->
+<section class="view" id="v-methods">
+ <div class="doc">
+  <div class="stack" style="gap:14px">
+    <h1>Where modeled opinion meets measured outcomes</h1>
+    <p>This is an unofficial proof of concept for the WISDOM correlation project. It joins the 25 county estimates published in the Wisconsin Diversity Opinion Maps with <span id="n-out"></span> outside measures of health, segregation, social capital, mobility and policing, and lets you test how they relate. It is not a product of the Institute for Diversity Science.</p>
+  </div>
+
+  <div class="warnbox stack">
+    <h2>Read this before quoting a number</h2>
+    <ol>
+      <li><b>WISDOM values are modeled, not measured.</b> One national survey of 4,775 adults was turned into estimates for 3,144 counties, about 1.5 respondents per county. The model predicts each county from the age, sex, race, education, income and 2024 vote of the people who live there, plus county education, diversity and density. A county's value mostly reflects who lives there and how it voted. <span id="r2-fact"></span></li>
+      <li><b>So a raw correlation can be built in.</b> Any outcome that tracks vote, education or race will correlate with WISDOM for that reason alone. Use <i>Hold constant</i> to see what is left once those are removed. Often little is.</li>
+      <li><b>Counties are not independent.</b> Neighbors resemble each other, so ordinary p-values overstate certainty. The atlas reports intervals from resampling whole states and prints no p-values.</li>
+      <li><b>Places are not people.</b> A link between counties does not show that the individuals who hold an opinion are the ones who experience an outcome.</li>
+      <li><b>WISDOM publishes no margins of error.</b> Small differences between two counties are not established differences in opinion.</li>
+      <li><b>Small counts are noisy.</b> Race-specific health measures and police shootings are missing or unstable in small counties. Check the count of places under every result.</li>
+    </ol>
+  </div>
+
+  <div>
+    <h2>Sources</h2>
+    <div class="tw"><table id="src-table"></table></div>
+    <p class="note" style="margin-top:8px">State values come from each source where it publishes them (WISDOM, Census, County Health Rankings, election returns). For county-only sources they are population-weighted county averages.</p>
+  </div>
+
+  <div>
+    <h2>How the reference papers show up here</h2>
+    <div class="tw"><table>
+      <tr><th>Paper</th><th>What it did</th><th>In this atlas</th></tr>
+      <tr><td>Leitner et al. (2016)</td><td>County racial attitudes against Black and White health outcomes.</td><td>White–Black life expectancy gap and Black-to-White premature death ratio, with covariates you can hold constant.</td></tr>
+      <tr><td>Hehman et al. (2018)</td><td>Regional bias against lethal force that is out of proportion to the Black population share, beyond demographics.</td><td>Black over-representation in fatal police shootings, 2015–2024, built from the Washington Post database.</td></tr>
+      <tr><td>Zhang et al. (2023)</td><td>Racialized economic segregation (ICE) against county mortality, with state clustering and population weights.</td><td>ICE computed from the 2020–2024 ACS, a population-weight switch, within-state comparison and state-clustered intervals.</td></tr>
+      <tr><td>Chetty et al. (2022)</td><td>Social capital measured from 21 billion friendships.</td><td>Economic connectedness, exposure, friending bias, clustering, support ratio, volunteering and civic organizations.</td></tr>
+      <tr><td>Henderson et al. (2021)</td><td>County counts of Confederate memorials against lynching victims in 11 Southern states.</td><td>Not loaded yet. The memorial and lynching counts are the next layer to add.</td></tr>
+    </table></div>
+  </div>
+
+  <div>
+    <h2>Not in this prototype yet</h2>
+    <ul>
+      <li>Project Implicit county averages for the race, sexuality and disability IATs, which are the direct comparison the reference papers make. The public files are individual responses and need their own aggregation step.</li>
+      <li>FBI hate crime counts, Confederate memorial counts and historical lynching records.</li>
+      <li>Uncertainty for the WISDOM estimates and checks against direct state survey averages, which need the respondent-level file.</li>
+    </ul>
+  </div>
+
+  <div class="card stack">
+    <h2 style="margin:0">Add your own measure</h2>
+    <p>Choose a CSV with a county FIPS column named <code>fips</code>, <code>geoid</code> or <code>county_fips</code> and one or more numeric columns. Each column appears in every picker under “Your data”. The file stays in your browser and is gone when you reload.</p>
+    <div class="row"><input type="file" id="userfile" accept=".csv,text/csv"><span class="hint" id="userfile-msg"></span></div>
+  </div>
+ </div>
+</section>
+</main>
+
+<!-- shared model controls, moved into whichever view is open -->
+<div id="model-park" hidden>
+<div class="card stack" id="model" style="gap:10px">
+  <h3 style="margin:0">How to measure the link</h3>
+  <div class="seg" id="method"><button data-v="pearson">Pearson</button><button data-v="spearman">Rank (Spearman)</button></div>
+  <label class="chk"><input type="checkbox" id="opt-weight"><span>Weight places by population</span></label>
+  <label class="chk" id="fe-wrap"><input type="checkbox" id="opt-fe"><span>Compare within states only</span></label>
+  <fieldset><legend class="lbl">Hold constant</legend><div id="controls"></div></fieldset>
+  <p class="note">WISDOM estimates are built from vote, education, race, income and density. Holding those constant shows what is left.</p>
+</div>
+</div>
+
+<div id="tip"></div>
+<div id="copybox"><div class="card"><h3>Copy this data</h3><p class="hint">Your browser blocked the clipboard. Select the text and copy it.</p><textarea id="copytext" readonly></textarea><div><button class="btn" id="copyclose">Close</button></div></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+/*STATS-START*/
+const Stats = (() => {
+  function wcorr(x, y, w) {
+    const n = x.length; let sw = 0, sx = 0, sy = 0;
+    for (let i = 0; i < n; i++) { sw += w[i]; sx += w[i] * x[i]; sy += w[i] * y[i]; }
+    const mx = sx / sw, my = sy / sw; let sxx = 0, syy = 0, sxy = 0;
+    for (let i = 0; i < n; i++) { const dx = x[i] - mx, dy = y[i] - my; sxx += w[i] * dx * dx; syy += w[i] * dy * dy; sxy += w[i] * dx * dy; }
+    return (sxx > 1e-12 && syy > 1e-12) ? sxy / Math.sqrt(sxx * syy) : NaN;
+  }
+  function ranks(x) {
+    const n = x.length, o = Array.from({ length: n }, (_, i) => i).sort((a, b) => x[a] - x[b]);
+    const r = new Float64Array(n); let i = 0;
+    while (i < n) { let j = i; while (j + 1 < n && x[o[j + 1]] === x[o[i]]) j++; const avg = (i + j) / 2 + 1; for (let k = i; k <= j; k++) r[o[k]] = avg; i = j + 1; }
+    return r;
+  }
+  function demean(x, g, w) {
+    const s = new Map(), n = x.length;
+    for (let i = 0; i < n; i++) { let e = s.get(g[i]); if (!e) { e = [0, 0]; s.set(g[i], e); } e[0] += w[i] * x[i]; e[1] += w[i]; }
+    const out = new Float64Array(n);
+    for (let i = 0; i < n; i++) { const e = s.get(g[i]); out[i] = x[i] - e[0] / e[1]; }
+    return out;
+  }
+  function standardize(x, w) {
+    const n = x.length; let sw = 0, sx = 0;
+    for (let i = 0; i < n; i++) { sw += w[i]; sx += w[i] * x[i]; }
+    const m = sx / sw; let v = 0;
+    for (let i = 0; i < n; i++) v += w[i] * (x[i] - m) * (x[i] - m);
+    const sd = Math.sqrt(v / sw); if (!(sd > 1e-12)) return null;
+    const out = new Float64Array(n); for (let i = 0; i < n; i++) out[i] = (x[i] - m) / sd; return out;
+  }
+  function solve(A, b) {
+    const k = b.length, M = A.map((r, i) => [...r, b[i]]); let scale = 0;
+    for (let i = 0; i < k; i++) scale = Math.max(scale, Math.abs(A[i][i]));
+    for (let c = 0; c < k; c++) {
+      let p = c; for (let r = c + 1; r < k; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      if (Math.abs(M[p][c]) < 1e-9 * scale) return null;
+      [M[c], M[p]] = [M[p], M[c]];
+      for (let r = 0; r < k; r++) { if (r === c) continue; const f = M[r][c] / M[c][c]; if (f) for (let j = c; j <= k; j++) M[r][j] -= f * M[c][j]; }
+    }
+    return M.map((r, i) => r[k] / r[i]);
+  }
+  // weighted least squares residuals of y on [1, cols]
+  function residualizer(cols, w) {
+    const n = w.length, Z = [new Float64Array(n).fill(1), ...cols], k = Z.length;
+    const A = Array.from({ length: k }, () => new Array(k).fill(0));
+    for (let a = 0; a < k; a++) for (let b = a; b < k; b++) { let s = 0; for (let i = 0; i < n; i++) s += w[i] * Z[a][i] * Z[b][i]; A[a][b] = A[b][a] = s; }
+    return y => {
+      const bv = new Array(k);
+      for (let a = 0; a < k; a++) { let s = 0; for (let i = 0; i < n; i++) s += w[i] * Z[a][i] * y[i]; bv[a] = s; }
+      const beta = solve(A, bv); if (!beta) return null;
+      const res = new Float64Array(n);
+      for (let i = 0; i < n; i++) { let f = 0; for (let a = 0; a < k; a++) f += beta[a] * Z[a][i]; res[i] = y[i] - f; }
+      return res;
+    };
+  }
+  function keepRows(x, y, o) {
+    const ctr = o.controls || [], n = x.length, keep = [];
+    for (let i = 0; i < n; i++) {
+      if (!isFinite(x[i]) || !isFinite(y[i])) continue;
+      if (o.w && !(o.w[i] > 0)) continue;
+      let ok = true; for (const c of ctr) if (!isFinite(c[i])) { ok = false; break; }
+      if (ok) keep.push(i);
+    }
+    return keep;
+  }
+  function corrOn(keep, x, y, o) {
+    const m = keep.length; if (m < 5) return { r: NaN, n: m };
+    const pick = a => { const out = new Float64Array(m); for (let j = 0; j < m; j++) out[j] = a[keep[j]]; return out; };
+    let px = pick(x), py = pick(y); const x0 = px, y0 = py;
+    let w;
+    if (o.w) { w = pick(o.w); let s = 0; for (let j = 0; j < m; j++) s += w[j]; s /= m; for (let j = 0; j < m; j++) w[j] /= s; }
+    else w = new Float64Array(m).fill(1);
+    let cs = (o.controls || []).map(pick);
+    if (o.method === 'spearman') { px = ranks(px); py = ranks(py); cs = cs.map(ranks); }
+    if (o.groups) { const g = keep.map(i => o.groups[i]); px = demean(px, g, w); py = demean(py, g, w); cs = cs.map(c => demean(c, g, w)); }
+    if (cs.length) {
+      const zs = cs.map(c => standardize(c, w)).filter(Boolean);
+      if (zs.length) { const R = residualizer(zs, w); px = R(px); py = R(py); if (!px || !py) return { r: NaN, n: m }; }
+    }
+    return { r: wcorr(px, py, w), n: m, keep, x0, y0, rx: px, ry: py, w };
+  }
+  function corr(x, y, o = {}) { return corrOn(keepRows(x, y, o), x, y, o); }
+  function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  // percentile interval from resampling whole clusters (states)
+  function bootCI(x, y, o, cluster, B = 300, seed = 11) {
+    const keep = keepRows(x, y, o), by = new Map();
+    for (const i of keep) { const g = cluster[i]; if (!by.has(g)) by.set(g, []); by.get(g).push(i); }
+    const labs = [...by.keys()], rnd = mulberry(seed), rs = [];
+    if (labs.length < 8) return null;
+    for (let b = 0; b < B; b++) {
+      const idx = [];
+      for (let j = 0; j < labs.length; j++) { const a = by.get(labs[Math.floor(rnd() * labs.length)]); for (const i of a) idx.push(i); }
+      const r = corrOn(idx, x, y, o).r; if (isFinite(r)) rs.push(r);
+    }
+    if (rs.length < B * 0.8) return null;
+    rs.sort((a, b) => a - b);
+    return [rs[Math.floor(0.025 * rs.length)], rs[Math.min(rs.length - 1, Math.floor(0.975 * rs.length))]];
+  }
+  function fitLine(x, y, w) {
+    const n = x.length; let sw = 0, sx = 0, sy = 0;
+    for (let i = 0; i < n; i++) { sw += w[i]; sx += w[i] * x[i]; sy += w[i] * y[i]; }
+    const mx = sx / sw, my = sy / sw; let sxx = 0, sxy = 0;
+    for (let i = 0; i < n; i++) { sxx += w[i] * (x[i] - mx) * (x[i] - mx); sxy += w[i] * (x[i] - mx) * (y[i] - my); }
+    const b = sxx > 0 ? sxy / sxx : 0; return { a: my - b * mx, b };
+  }
+  return { corr, corrOn, keepRows, bootCI, fitLine, ranks, wcorr };
+})();
+/*STATS-END*/
+
+// ---------------------------------------------------------------- state
+const S = { view: 'map', geo: 'county', mapVar: 'discrim_minority', mapScale: 'seq', stateFilter: '', sel: '55025',
+  x: 'reduce_health_disparities', y: 'le_gap_bw', method: 'pearson', weight: true, fe: false,
+  controls: ['trump24', 'ba_plus', 'pct_nhwhite', 'density', 'med_income'], plot: 'raw', mmode: 'simple', mcols: 'outside' };
+const D = {}, VAR = new Map(), GROUP = new Map();
+let CAT, TOPO, MAP;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const SEQ = ['#dbe9fb', '#b7d3f6', '#86b6ef', '#5598e7', '#2a78d6', '#1c5cab', '#104281', '#0b2f5e'];
+const NODATA = '#e4e6e3';
+const rColor = d3.scaleLinear().domain([-1, -0.5, 0, 0.5, 1]).range(['#8f1f1f', '#e58a85', '#eeeeea', '#86b6ef', '#154a8c']).clamp(true);
+
+function fmt(v, m, bare) {
+  if (!isFinite(v)) return '—';
+  const n = d3.format(`,.${m.dec}f`)(v);
+  if (m.unit === '%') return n + '%';
+  if (m.unit === '$') return '$' + n;
+  if (m.unit === '×') return n + '×';
+  if (m.unit === '' || m.unit === '/100' || bare) return n;
+  return n + ' ' + m.unit;
+}
+const fr = r => isFinite(r) ? (r < 0 ? '−' : '+') + Math.abs(r).toFixed(2).replace(/^0/, '0') : '—';
+const placeWord = (n = 2) => S.geo === 'county' ? (n === 1 ? 'county' : 'counties') : (n === 1 ? 'state' : 'states');
+function placeName(g, i) { return S.geo === 'county' ? `${g.name[i]}, ${g.st[i]}` : g.name[i]; }
+
+function buildGeo(rows, keys) {
+  const n = rows.length, g = { n, ids: [], name: [], st: [], pop: new Float64Array(n), v: {}, idx: new Map(), cache: new Map() };
+  keys.forEach(k => g.v[k] = new Float64Array(n));
+  rows.forEach((r, i) => {
+    g.ids.push(r.fips); g.name.push(r.name); g.st.push(r.st); g.idx.set(r.fips, i);
+    g.pop[i] = r.pop === '' ? NaN : +r.pop;
+    keys.forEach(k => { g.v[k][i] = (r[k] === '' || r[k] == null) ? NaN : +r[k]; });
+  });
+  return g;
+}
+const vals = k => D[S.geo].v[k];
+// values used for statistics: log10 for measures flagged log
+function sv(k) {
+  const g = D[S.geo], m = VAR.get(k);
+  if (!m.log) return g.v[k];
+  const ck = 'log:' + k; if (!g.cache.has(ck)) g.cache.set(ck, g.v[k].map(v => v > 0 ? Math.log10(v) : NaN));
+  return g.cache.get(ck);
+}
+function sorted(k) {
+  const g = D[S.geo], ck = 'sorted:' + k;
+  if (!g.cache.has(ck)) g.cache.set(ck, Float64Array.from(g.v[k]).filter(isFinite).sort());
+  return g.cache.get(ck);
+}
+function pctile(k, v) { const s = sorted(k); return s.length ? 100 * d3.bisectLeft(s, v) / s.length : NaN; }
+function wmeanOf(k) { const g = D[S.geo], a = g.v[k]; let s = 0, w = 0; for (let i = 0; i < g.n; i++) if (isFinite(a[i]) && g.pop[i] > 0) { s += a[i] * g.pop[i]; w += g.pop[i]; } return s / w; }
+function spec(xk, yk, simple) {
+  if (simple) return {};
+  const g = D[S.geo];
+  return { method: S.method, w: S.weight ? g.pop : null, groups: (S.fe && S.geo === 'county') ? g.st : null,
+    controls: S.controls.filter(k => k !== xk && k !== yk).map(sv) };
+}
+const activeControls = (xk, yk) => S.controls.filter(k => k !== xk && k !== yk);
+const adjustedOn = () => S.controls.length > 0 || (S.fe && S.geo === 'county') || S.method === 'spearman' || S.weight;
+
+// ---------------------------------------------------------------- pickers
+function fillSelect(sel, value) {
+  sel.innerHTML = '';
+  for (const g of CAT.groups) {
+    const vs = CAT.vars.filter(v => v.group === g.id); if (!vs.length) continue;
+    const og = document.createElement('optgroup'); og.label = (g.kind === 'wisdom' ? 'WISDOM · ' : '') + g.label;
+    for (const v of vs) { const o = document.createElement('option'); o.value = v.key; o.textContent = v.label; og.appendChild(o); }
+    sel.appendChild(og);
+  }
+  sel.value = value;
+}
+function refreshPickers() { fillSelect($('#mapvar'), S.mapVar); fillSelect($('#xvar'), S.x); fillSelect($('#yvar'), S.y); }
+function segInit(id, key, after) {
+  const box = $(id);
+  box.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S[key] = b.dataset.v; after && after(); render(); });
+}
+function segSync(id, key) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === S[key])); }
+
+// ---------------------------------------------------------------- tooltip
+const tip = $('#tip');
+function showTip(e, html) { tip.innerHTML = html; tip.style.display = 'block'; const r = tip.getBoundingClientRect(); let x = e.clientX + 14, y = e.clientY + 14; if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 12; if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 12; tip.style.left = Math.max(4, x) + 'px'; tip.style.top = Math.max(4, y) + 'px'; }
+function hideTip() { tip.style.display = 'none'; }
+
+// ---------------------------------------------------------------- map
+function initMap() {
+  const svg = d3.select('#map'), W = 975, H = 610;
+  const fc = topojson.feature(TOPO, TOPO.objects.counties);
+  const path = d3.geoPath(d3.geoIdentity().reflectY(true).fitExtent([[10, 10], [W - 10, H - 10]], fc));
+  const byState = d3.group(TOPO.objects.counties.geometries, g => g.id.slice(0, 2));
+  const sFeat = [...byState].map(([sf, geoms]) => ({ type: 'Feature', id: sf, geometry: topojson.merge(TOPO, geoms) }));
+  const root = svg.append('g');
+  const gC = root.append('g'), gS = root.append('g');
+  const cP = gC.selectAll('path').data(fc.features).join('path').attr('class', 'c').attr('d', path);
+  const sP = gS.selectAll('path').data(sFeat).join('path').attr('class', 's').attr('d', path);
+  root.append('path').attr('class', 'mesh').attr('d', path(topojson.mesh(TOPO, TOPO.objects.counties, (a, b) => a !== b && a.id.slice(0, 2) !== b.id.slice(0, 2))));
+  const selo = root.append('path').attr('class', 'selo');
+  const zoom = d3.zoom().scaleExtent([1, 14]).on('zoom', e => root.attr('transform', e.transform));
+  svg.call(zoom).on('dblclick.zoom', null);
+  const feat = new Map(fc.features.map(f => [f.id, f])), sfeat = new Map(sFeat.map(f => [f.id, f]));
+  function hover(e) {
+    const d = d3.select(e.target).datum(); if (!d || !d.id) return hideTip();
+    const g = D[S.geo], i = g.idx.get(d.id); if (i == null) return hideTip();
+    const m = VAR.get(S.mapVar);
+    showTip(e, `<b>${esc(placeName(g, i))}</b>${fmt(g.v[S.mapVar][i], m)} <span>· ${esc(m.label)}</span>`);
+  }
+  root.on('pointermove', hover).on('pointerleave', hideTip).on('click', e => { const d = d3.select(e.target).datum(); if (d && d.id) { S.sel = d.id; render(); } });
+  $('#zoom-reset').addEventListener('click', () => { S.stateFilter = ''; $('#statefilter').value = ''; svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity); render(); });
+  function zoomTo(sf) {
+    if (!sf) return svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+    const [[x0, y0], [x1, y1]] = path.bounds(sfeat.get(sf));
+    const k = Math.min(14, 0.88 / Math.max((x1 - x0) / W, (y1 - y0) / H));
+    svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(W / 2, H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2));
+  }
+  MAP = { cP, sP, gC, gS, selo, path, feat, sfeat, zoomTo };
+}
+function mapColor() {
+  const k = S.mapVar, a = sv(k), s = Float64Array.from(a).filter(isFinite).sort(), m = VAR.get(k);
+  const lo = d3.quantileSorted(s, 0.02), hi = d3.quantileSorted(s, 0.98);
+  if (S.mapScale === 'div') {
+    let c = m.nat != null ? m.nat : wmeanOf(k); if (m.log) c = Math.log10(c);
+    const h = Math.max(Math.abs(hi - c), Math.abs(c - lo)) || 1;
+    const sc = d3.scaleLinear().domain([c - h, c - h / 2, c, c + h / 2, c + h]).range(['#154a8c', '#86b6ef', '#eeeeea', '#f0a08a', '#b23a1a']).clamp(true);
+    return { sc, lo: c - h, hi: c + h, mid: c };
+  }
+  const sc = d3.scaleLinear().domain(d3.range(SEQ.length).map(i => lo + (hi - lo) * i / (SEQ.length - 1))).range(SEQ).clamp(true);
+  return { sc, lo, hi };
+}
+function renderMap() {
+  const g = D[S.geo], k = S.mapVar, m = VAR.get(k), a = sv(k), { sc, lo, hi, mid } = mapColor();
+  const fill = d => { const i = g.idx.get(d.id); const v = i == null ? NaN : a[i]; return isFinite(v) ? sc(v) : NODATA; };
+  MAP.gC.style('display', S.geo === 'county' ? null : 'none'); MAP.gS.style('display', S.geo === 'state' ? null : 'none');
+  (S.geo === 'county' ? MAP.cP : MAP.sP).attr('fill', fill);
+  const f = S.geo === 'county' ? MAP.feat.get(S.sel) : MAP.sfeat.get(S.sel);
+  MAP.selo.attr('d', f ? MAP.path(f) : null);
+  // headline
+  const src = CAT.sources[m.src] || { name: 'Your file', vintage: '' };
+  $('#map-h').textContent = m.q || m.label;
+  const us = m.nat != null ? `<b>${fmt(m.nat, m)}</b> of U.S. adults agree` : `U.S. population-weighted average <b>${fmt(wmeanOf(k), m)}</b>`;
+  $('#map-sub').innerHTML = `${us} · ${esc(m.desc || '')} <span class="note">${esc(src.name)}${src.vintage ? ', ' + esc(src.vintage) : ''}.</span>`;
+  // legend
+  const back = v => m.log ? Math.pow(10, v) : v, stops = d3.range(0, 1.001, 0.1);
+  const ticks = (mid != null ? [lo, mid, hi] : [lo, (lo + hi) / 2, hi]);
+  $('#legend').innerHTML = `<svg width="232" height="34"><defs><linearGradient id="lg">${stops.map(t => `<stop offset="${t * 100}%" stop-color="${sc(lo + (hi - lo) * t)}"/>`).join('')}</linearGradient></defs>
+    <rect x="6" y="0" width="220" height="11" rx="2" fill="url(#lg)"/>${ticks.map((t, j) => `<text x="${6 + 110 * j}" y="27" text-anchor="${['start', 'middle', 'end'][j]}" font-size="11" fill="#47525e">${j === 1 && mid != null ? 'U.S. ' : ''}${fmt(back(t), m, true)}${j === 2 ? (m.unit === '%' || m.unit === '$' || m.unit === '×' ? '' : ' ' + esc(m.unit)) : ''}</text>`).join('')}</svg>
+    <span style="display:inline-block;width:10px;height:10px;background:${NODATA};border-radius:2px;vertical-align:-1px"></span> No data`;
+  // ranks
+  const inF = i => S.geo === 'state' || !S.stateFilter || g.st[i] === S.stateFilter;
+  const ix = d3.range(g.n).filter(i => isFinite(g.v[k][i]) && inF(i)).sort((p, q) => g.v[k][q] - g.v[k][p]);
+  const li = i => `<button data-id="${g.ids[i]}">${esc(placeName(g, i))}</button><span>${fmt(g.v[k][i], m)}</span>`;
+  $('#rank-hi').innerHTML = ix.slice(0, 5).map(li).join(''); $('#rank-lo').innerHTML = ix.slice(-5).reverse().map(li).join('');
+  $('#rank-h').textContent = 'Highest' + (S.geo === 'county' && S.stateFilter ? ' in ' + S.stateFilter : '');
+  renderProfile();
+}
+function renderProfile() {
+  const g = D[S.geo], i = g.idx.get(S.sel), box = $('#profile');
+  if (i == null) { box.innerHTML = `<p class="hint">Click a ${placeWord(1)} on the map to see its profile.</p>`; return; }
+  const m = VAR.get(S.mapVar), v = g.v[S.mapVar][i];
+  const sti = S.geo === 'county' ? D.state.byAbbr.get(g.st[i]) : null;
+  let h = `<div><p class="lbl" style="margin:0">${S.geo === 'county' ? 'County profile' : 'State profile'}</p><h2 class="pname">${esc(placeName(g, i))}</h2>
+    <p class="hint">${isFinite(g.pop[i]) ? d3.format(',')(g.pop[i]) + ' residents' : ''}</p></div>
+    <div><div class="big">${fmt(v, m, true)}<span style="font-size:18px;font-weight:600;letter-spacing:0"> ${['%', '$', '×', '', '/100'].includes(m.unit) || !isFinite(v) ? '' : esc(m.unit)}</span></div>
+    <p class="hint">${esc(m.label)}${isFinite(v) ? `. Higher than ${Math.round(pctile(S.mapVar, v))}% of ${placeWord()}.` : '. No value for this place.'}</p></div>
+    <div><div class="key"><span><i class="dot"></i>This ${placeWord(1)}</span>${sti != null ? '<span><i class="ring"></i>State</span>' : ''}<span><i class="tick"></i>U.S.</span></div>`;
+  for (const gr of CAT.groups.filter(x => x.kind === 'wisdom')) {
+    h += `<div class="gh">${esc(gr.label)}</div>`;
+    for (const w of CAT.vars.filter(x => x.group === gr.id)) {
+      const val = g.v[w.key][i], sv_ = sti != null ? D.state.v[w.key][sti] : NaN;
+      h += `<div class="it${w.key === S.mapVar ? ' cur' : ''}" data-k="${w.key}" title="${esc(w.q)}"><span>${esc(w.label)}</span>
+        <span class="trk"><i class="tick" style="left:${w.nat}%"></i>${isFinite(sv_) ? `<i class="ring" style="left:${sv_}%"></i>` : ''}${isFinite(val) ? `<i class="dot" style="left:${val}%"></i>` : ''}</span>
+        <span class="val">${fmt(val, w)}</span></div>`;
+    }
+  }
+  h += `</div><div><p class="note">Outside measures. The bar shows where this ${placeWord(1)} ranks among all ${placeWord()}.</p>`;
+  for (const gr of CAT.groups.filter(x => x.kind !== 'wisdom')) {
+    const vs = CAT.vars.filter(x => x.group === gr.id); if (!vs.length) continue;
+    h += `<div class="gh">${esc(gr.label)}</div>`;
+    for (const w of vs) {
+      const val = g.v[w.key][i], p = isFinite(val) ? pctile(w.key, val) : NaN;
+      h += `<div class="it${w.key === S.mapVar ? ' cur' : ''}" data-k="${w.key}" title="${esc(w.desc || '')}"><span>${esc(w.label)}</span>
+        <span class="bar">${isFinite(p) ? `<i style="width:${Math.max(3, p)}%"></i>` : ''}</span><span class="val">${fmt(val, w, true)}</span></div>`;
+    }
+  }
+  h += `</div><div><button class="btn" id="copy-profile">Copy this profile as CSV</button></div>`;
+  box.innerHTML = h;
+}
+
+// ---------------------------------------------------------------- correlate
+function renderCorrelate() {
+  const g = D[S.geo], mx = VAR.get(S.x), my = VAR.get(S.y), X = sv(S.x), Y = sv(S.y);
+  const ctl = activeControls(S.x, S.y), fe = S.fe && S.geo === 'county';
+  // ladder of cumulative steps
+  const steps = [{ label: 'Simple correlation', o: {} }];
+  let o = {};
+  if (S.weight) { o = { ...o, w: g.pop }; steps.push({ label: 'Weighted by population', o }); }
+  if (S.method === 'spearman') { o = { ...o, method: 'spearman' }; steps.push({ label: 'Using ranks', o }); }
+  if (fe) { o = { ...o, groups: g.st }; steps.push({ label: 'Within states', o }); }
+  if (ctl.length) { o = { ...o, controls: ctl.map(sv) }; steps.push({ label: 'Holding constant ' + ctl.map(k => VAR.get(k).short || VAR.get(k).label.toLowerCase()).join(', '), o }); }
+  steps.forEach(s => s.res = Stats.corr(X, Y, s.o));
+  const fin = steps[steps.length - 1], R = fin.res;
+  const ci = isFinite(R.r) ? Stats.bootCI(X, Y, fin.o, S.geo === 'county' ? g.st : g.ids) : null;
+
+  $('#sc-h').textContent = `${mx.label} vs. ${my.label}`;
+  $('#sc-sub').innerHTML = `${esc(mx.desc || '')} <span class="note">vs.</span> ${esc(my.desc || '')}`;
+  $('#r-big').innerHTML = `<small>r</small>${fr(R.r)}`;
+  $('#r-ci').innerHTML = isFinite(R.r) ? `${ci ? `95% interval ${fr(ci[0])} to ${fr(ci[1])} · ` : ''}${d3.format(',')(R.n)} ${placeWord(R.n)} with both measures` : `Too few ${placeWord()} have both measures under these settings.`;
+  const str = a => a < 0.1 ? 'no meaningful' : a < 0.3 ? 'a weak' : a < 0.5 ? 'a moderate' : a < 0.7 ? 'a strong' : 'a very strong';
+  const r0 = steps[0].res.r;
+  let words = isFinite(r0) ? `On the surface there is ${str(Math.abs(r0))} ${Math.abs(r0) < 0.1 ? '' : (r0 > 0 ? 'positive ' : 'negative ')}link (r = ${fr(r0)}).` : '';
+  if (steps.length > 1 && isFinite(R.r) && isFinite(r0)) {
+    const shrink = Math.abs(R.r) < Math.abs(r0) - 0.05, flip = Math.sign(R.r) !== Math.sign(r0) && Math.abs(R.r) >= 0.1 && Math.abs(r0) >= 0.1;
+    words += flip ? ` Under the current settings the sign flips to ${fr(R.r)}.` : shrink ? ` Under the current settings it shrinks to ${fr(R.r)}.` : Math.abs(R.r) > Math.abs(r0) + 0.05 ? ` Under the current settings it grows to ${fr(R.r)}.` : ` It holds at ${fr(R.r)} under the current settings.`;
+  }
+  const dropped = S.controls.filter(k => k === S.x || k === S.y);
+  if (dropped.length) words += ` ${VAR.get(dropped[0]).label} is on an axis, so it is not held constant.`;
+  $('#r-words').textContent = words;
+  $('#ladder').innerHTML = steps.map((s, j) => {
+    const r = s.res.r, last = j === steps.length - 1, c = r >= 0 ? 'var(--pos)' : 'var(--neg)';
+    const bar = isFinite(r) ? `<i style="left:${r >= 0 ? 50 : 50 + r * 50}%;width:${Math.abs(r) * 50}%;background:${c}"></i>` : '';
+    const wh = last && ci ? `<u style="left:${50 + ci[0] * 50}%;width:${(ci[1] - ci[0]) * 50}%"></u>` : '';
+    return `<span class="${last ? 'fin' : ''}">${esc(s.label)}</span><span class="lt">${bar}${wh}</span><span class="v ${last ? 'fin' : ''}">${fr(r)}</span>`;
+  }).join('');
+
+  // scatter
+  const svg = d3.select('#scatter'); svg.selectAll('*').remove();
+  const box = svg.node().getBoundingClientRect(), W = Math.max(360, box.width), H = Math.max(300, box.height), M = { l: 62, r: 18, t: 16, b: 50 };
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+  const adj = S.plot === 'adj' && steps.length > 1 && isFinite(R.r);
+  const P = isFinite(R.r) ? R : steps[0].res;
+  if (!P.keep) { svg.append('text').attr('x', W / 2).attr('y', H / 2).attr('text-anchor', 'middle').attr('fill', '#7d858c').text('Not enough places have both measures.'); $('#outliers').innerHTML = ''; renderSelCard(); return; }
+  const px = adj ? P.rx : P.x0, py = adj ? P.ry : P.y0, n = P.keep.length;
+  const pad = e => { const d = (e[1] - e[0]) * 0.04 || 1; return [e[0] - d, e[1] + d]; };
+  const xs = d3.scaleLinear().domain(pad(d3.extent(px))).range([M.l, W - M.r]), ys = d3.scaleLinear().domain(pad(d3.extent(py))).range([H - M.b, M.t]);
+  const tf = m => v => adj ? d3.format('.2~f')(v) : m.log ? d3.format('~s')(Math.pow(10, v)) : (m.unit === '$' && m.dec === 0 ? '$' + d3.format('~s')(v) : d3.format('~g')(+v.toFixed(4)));
+  svg.append('g').attr('class', 'grid').selectAll('line').data(ys.ticks(6)).join('line').attr('x1', M.l).attr('x2', W - M.r).attr('y1', ys).attr('y2', ys);
+  svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - M.b})`).call(d3.axisBottom(xs).ticks(7).tickFormat(tf(mx)).tickSizeOuter(0));
+  svg.append('g').attr('class', 'axis').attr('transform', `translate(${M.l},0)`).call(d3.axisLeft(ys).ticks(6).tickFormat(tf(my)).tickSizeOuter(0));
+  const ax = (m) => m.label + (adj ? ', adjusted' : (m.unit && m.unit !== '/100' ? ` (${m.unit})` : ''));
+  svg.append('text').attr('class', 'axl').attr('x', (M.l + W - M.r) / 2).attr('y', H - 10).attr('text-anchor', 'middle').text(ax(mx));
+  svg.append('text').attr('class', 'axl').attr('transform', `translate(15,${(M.t + H - M.b) / 2}) rotate(-90)`).attr('text-anchor', 'middle').text(ax(my));
+  svg.append('clipPath').attr('id', 'clip').append('rect').attr('x', M.l).attr('y', M.t).attr('width', W - M.l - M.r).attr('height', H - M.t - M.b);
+  const maxPop = d3.max(g.pop), rad = i => S.geo === 'state' ? 4 + 14 * Math.sqrt(g.pop[i] / maxPop) : Math.max(1.7, 17 * Math.sqrt(g.pop[i] / maxPop));
+  const order = d3.range(n).sort((a, b) => g.pop[P.keep[b]] - g.pop[P.keep[a]]);
+  const inF = i => S.geo === 'state' || !S.stateFilter || g.st[i] === S.stateFilter;
+  const dots = svg.append('g').attr('clip-path', 'url(#clip)').selectAll('circle').data(order).join('circle')
+    .attr('cx', j => xs(px[j])).attr('cy', j => ys(py[j])).attr('r', j => rad(P.keep[j]))
+    .attr('class', j => { const i = P.keep[j]; return g.ids[i] === S.sel ? 'sel' : inF(i) ? null : 'dim'; })
+    .on('pointermove', (e, j) => { const i = P.keep[j]; showTip(e, `<b>${esc(placeName(g, i))}</b>${esc(mx.label)}: ${fmt(g.v[S.x][i], mx)}<br>${esc(my.label)}: ${fmt(g.v[S.y][i], my)}`); })
+    .on('pointerleave', hideTip).on('click', (e, j) => { S.sel = g.ids[P.keep[j]]; render(); });
+  dots.filter('.sel').raise();
+  const line = Stats.fitLine(px, py, P.w), [d0, d1] = xs.domain();
+  svg.append('line').attr('class', 'fit').attr('clip-path', 'url(#clip)').attr('x1', xs(d0)).attr('x2', xs(d1)).attr('y1', ys(line.a + line.b * d0)).attr('y2', ys(line.a + line.b * d1));
+
+  // outliers: largest residuals from the fitted line, among places above the median population
+  const medPop = d3.median(P.keep, i => g.pop[i]) || 0, res = [];
+  for (let j = 0; j < n; j++) if (g.pop[P.keep[j]] >= medPop) res.push([P.keep[j], py[j] - (line.a + line.b * px[j])]);
+  res.sort((a, b) => b[1] - a[1]);
+  const ob = ([i]) => `<button data-id="${g.ids[i]}" title="${esc(placeName(g, i))}">${esc(placeName(g, i))}</button>`;
+  $('#outliers').innerHTML = `<div><p class="note">Higher than expected</p>${res.slice(0, 4).map(ob).join('')}</div><div><p class="note">Lower than expected</p>${res.slice(-4).reverse().map(ob).join('')}</div>`;
+  renderSelCard();
+}
+function renderSelCard() {
+  const g = D[S.geo], i = g.idx.get(S.sel), mx = VAR.get(S.x), my = VAR.get(S.y);
+  $('#sel-card').innerHTML = i == null ? `<h3>No place selected</h3><p class="hint">Click a dot.</p>` :
+    `<h3>${esc(placeName(g, i))}</h3><p class="hint">${esc(mx.label)}: <b>${fmt(g.v[S.x][i], mx)}</b><br>${esc(my.label)}: <b>${fmt(g.v[S.y][i], my)}</b></p><p style="margin-top:8px"><a href="#map">Open its full profile on the map</a></p>`;
+}
+
+// ---------------------------------------------------------------- matrix
+const mCache = new Map();
+function matrixData() {
+  const rows = CAT.vars.filter(v => VAR.get(v.key).kind === 'wisdom');
+  const cols = CAT.vars.filter(v => S.mcols === 'wisdom' ? VAR.get(v.key).kind === 'wisdom' : VAR.get(v.key).kind !== 'wisdom');
+  const key = JSON.stringify([S.geo, S.mcols, S.method, S.weight, S.fe, S.controls, CAT.vars.length]);
+  if (!mCache.has(key)) {
+    const cells = [];
+    for (const r of rows) for (const c of cols) {
+      if (r.key === c.key) { cells.push({ r, c, simple: NaN, adj: NaN, n: 0, self: true }); continue; }
+      const a = Stats.corr(sv(r.key), sv(c.key), {}), b = Stats.corr(sv(r.key), sv(c.key), spec(r.key, c.key));
+      cells.push({ r, c, simple: a.r, adj: b.r, n: b.n, n0: a.n });
+    }
+    mCache.set(key, cells);
+  }
+  return { rows, cols, cells: mCache.get(key) };
+}
+function renderMatrix() {
+  const { rows, cols, cells } = matrixData(), mode = S.mmode, cs = 18, LW = 256, TH = 178;
+  const gap = 9, colX = [], rowY = []; let x = LW, y = TH, pg = null;
+  cols.forEach(c => { if (pg && c.group !== pg) x += gap; pg = c.group; colX.push(x); x += cs; });
+  const Wd = x + 96; pg = null;
+  rows.forEach(r => { if (pg && r.group !== pg) y += gap; pg = r.group; rowY.push(y); y += cs; });
+  const Ht = y + 26, svg = d3.select('#matrix').attr('width', Wd).attr('height', Ht); svg.selectAll('*').remove();
+  svg.append('g').selectAll('text').data(rows).join('text').attr('x', LW - 8).attr('y', (d, i) => rowY[i] + cs / 2 + 4).attr('text-anchor', 'end').text(d => d.label.length > 40 ? d.label.slice(0, 39) + '…' : d.label);
+  svg.append('g').selectAll('text').data(cols).join('text').attr('transform', (d, i) => `translate(${colX[i] + cs / 2 + 3},${TH - 7}) rotate(-60)`).text(d => d.label.length > 30 ? d.label.slice(0, 29) + '…' : d.label);
+  const ri = new Map(rows.map((r, i) => [r.key, i])), ci = new Map(cols.map((c, i) => [c.key, i]));
+  svg.append('g').selectAll('rect').data(cells).join('rect').attr('class', 'cell').attr('x', d => colX[ci.get(d.c.key)]).attr('y', d => rowY[ri.get(d.r.key)]).attr('width', cs - 2).attr('height', cs - 2).attr('rx', 2)
+    .attr('fill', d => isFinite(d[mode]) && d.n >= 30 ? rColor(d[mode]) : d.self ? 'none' : '#f3f4f2').attr('stroke', d => isFinite(d[mode]) && d.n >= 30 || d.self ? null : '#dfe2df')
+    .on('pointermove', (e, d) => showTip(e, d.self ? '' : `<b>${esc(d.r.label)}</b>× ${esc(d.c.label)}<br>Simple r ${fr(d.simple)} · Adjusted r ${fr(d.adj)}<br><span>${d3.format(',')(d.n)} ${placeWord(d.n)}${d.n < 30 ? ', too few to show' : ''}</span>`))
+    .on('pointerleave', hideTip).on('click', (e, d) => { if (d.self) return; S.x = d.r.key; S.y = d.c.key; location.hash = 'correlate'; });
+  // column group labels along the bottom
+  const first = new Map(); cols.forEach((c, i) => { if (!first.has(c.group)) first.set(c.group, i); });
+  const shortG = { mobility: 'Mobility', context: 'Politics and demographics', structure: 'Segregation, inequality' };
+  svg.append('g').selectAll('text').data([...first]).join('text').attr('class', 'gl').attr('x', d => colX[d[1]]).attr('y', Ht - 9).text(d => S.mcols === 'wisdom' ? '' : (shortG[d[0]] || GROUP.get(d[0]).label));
+  // headline finding: outside columns that are not themselves controls
+  const use = cells.filter(d => !d.self && d.n >= 30 && isFinite(d.simple) && isFinite(d.adj) && !S.controls.includes(d.c.key) && !S.controls.includes(d.r.key));
+  const m0 = d3.median(use, d => Math.abs(d.simple)), m1 = d3.median(use, d => Math.abs(d.adj));
+  const strong0 = use.filter(d => Math.abs(d.simple) >= 0.3).length, strong1 = use.filter(d => Math.abs(d.adj) >= 0.3).length;
+  const cn = S.controls.map(k => VAR.get(k).short || VAR.get(k).label.toLowerCase());
+  $('#finding').innerHTML = S.mcols === 'wisdom'
+    ? `The 25 WISDOM items rise and fall together across ${placeWord()}: the median pair correlates at <b>|r| = ${m0.toFixed(2)}</b>. They are close to one dimension, not 25 separate signals.`
+    : `Across ${d3.format(',')(use.length)} pairs of a WISDOM item and an outside measure, the median link is <b>|r| = ${m0.toFixed(2)}</b>, and ${strong0} pairs reach 0.30. ${adjustedOn() ? `Under the current settings${cn.length ? ' (holding constant ' + cn.join(', ') + ')' : ''} the median falls to <b>${m1.toFixed(2)}</b> and ${strong1} pairs reach 0.30.` : 'Turn on Hold constant to see how much of that survives.'}`;
+  $('#mlegend').innerHTML = `<span class="lbl">Correlation</span><svg width="232" height="30"><defs><linearGradient id="rg">${d3.range(0, 1.001, 0.1).map(t => `<stop offset="${t * 100}%" stop-color="${rColor(-1 + 2 * t)}"/>`).join('')}</linearGradient></defs><rect x="6" y="0" width="220" height="11" rx="2" fill="url(#rg)"/><text x="6" y="26" font-size="11" fill="#47525e">−1</text><text x="116" y="26" font-size="11" text-anchor="middle" fill="#47525e">0</text><text x="226" y="26" font-size="11" text-anchor="end" fill="#47525e">+1</text></svg><p class="note">Empty cells have fewer than 30 ${placeWord()} with both measures.</p>`;
+}
+
+// ---------------------------------------------------------------- shared controls + routing
+function syncControls() {
+  ['#geo', '#mapscale', '#method', '#plotmode', '#mmode', '#mcols'].forEach((id, j) => segSync(id, ['geo', 'mapScale', 'method', 'plot', 'mmode', 'mcols'][j]));
+  $('#opt-weight').checked = S.weight; $('#opt-fe').checked = S.fe;
+  $('#opt-fe').disabled = S.geo === 'state'; $('#fe-wrap').style.opacity = S.geo === 'state' ? .45 : 1;
+  document.querySelectorAll('#controls input').forEach(i => i.checked = S.controls.includes(i.value));
+  $('#mapvar').value = S.mapVar; $('#xvar').value = S.x; $('#yvar').value = S.y; $('#statefilter').value = S.stateFilter;
+  document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.dataset.view === S.view));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + S.view));
+  const slot = $('#model-slot-' + S.view) || $('#model-park'); if ($('#model').parentNode !== slot) slot.appendChild($('#model'));
+}
+function render() {
+  if (!CAT) return;
+  syncControls(); hideTip();
+  if (S.view === 'map') renderMap();
+  else if (S.view === 'correlate') renderCorrelate();
+  else if (S.view === 'matrix') renderMatrix();
+}
+function route() { const h = location.hash.replace('#', ''); S.view = ['map', 'correlate', 'matrix', 'methods'].includes(h) ? h : 'map'; render(); }
+function setGeo(geo) {
+  if (geo === S.geo) return;
+  const from = D[S.geo], i = from.idx.get(S.sel);
+  if (geo === 'state') S.sel = i != null ? S.sel.slice(0, 2) : null;
+  else { // most populous county of the selected state
+    const st = i != null ? from.st[i] : null; let best = null;
+    if (st) for (let j = 0; j < D.county.n; j++) if (D.county.st[j] === st && (best == null || D.county.pop[j] > D.county.pop[best])) best = j;
+    S.sel = best != null ? D.county.ids[best] : null;
+  }
+  S.geo = geo;
+}
+async function copyText(text, btn) {
+  try { await navigator.clipboard.writeText(text); const t = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = t, 1400); }
+  catch (e) { $('#copytext').value = text; $('#copybox').style.display = 'flex'; $('#copytext').select(); }
+}
+const csvCell = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+
+function wire() {
+  $('#geo').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { setGeo(b.dataset.v); render(); } });
+  segInit('#mapscale', 'mapScale'); segInit('#method', 'method'); segInit('#plotmode', 'plot'); segInit('#mmode', 'mmode'); segInit('#mcols', 'mcols');
+  $('#mapvar').addEventListener('change', e => { S.mapVar = e.target.value; render(); });
+  $('#xvar').addEventListener('change', e => { S.x = e.target.value; render(); });
+  $('#yvar').addEventListener('change', e => { S.y = e.target.value; render(); });
+  $('#swap').addEventListener('click', () => { [S.x, S.y] = [S.y, S.x]; render(); });
+  $('#opt-weight').addEventListener('change', e => { S.weight = e.target.checked; render(); });
+  $('#opt-fe').addEventListener('change', e => { S.fe = e.target.checked; render(); });
+  $('#controls').addEventListener('change', e => { const v = e.target.value; S.controls = e.target.checked ? [...new Set([...S.controls, v])] : S.controls.filter(k => k !== v); S.controls = CAT.controls.filter(k => S.controls.includes(k)); render(); });
+  $('#statefilter').addEventListener('change', e => { S.stateFilter = e.target.value; const i = D.state.byAbbr.get(S.stateFilter); MAP.zoomTo(i != null ? D.state.ids[i] : null); render(); });
+  const pick = e => { const b = e.target.closest('button[data-id]'); if (b) { S.sel = b.dataset.id; $('#results').hidden = true; render(); } };
+  ['#rank-hi', '#rank-lo', '#results', '#outliers'].forEach(id => $(id).addEventListener('click', pick));
+  $('#search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase(), g = D[S.geo], out = [];
+    if (q.length >= 2) {
+      const a = [], b = [];
+      for (let i = 0; i < g.n; i++) { const nm = placeName(g, i).toLowerCase(); if (nm.startsWith(q)) a.push(i); else if (nm.includes(q)) b.push(i); }
+      const byPop = (i, j) => (g.pop[j] || 0) - (g.pop[i] || 0);
+      out.push(...a.sort(byPop).slice(0, 8)); out.push(...b.sort(byPop).slice(0, 8 - out.length));
+    }
+    $('#results').hidden = !out.length; $('#results').innerHTML = out.map(i => `<button data-id="${g.ids[i]}">${esc(placeName(g, i))}</button>`).join('');
+  });
+  $('#profile').addEventListener('click', e => {
+    const it = e.target.closest('.it'); if (it) { S.mapVar = it.dataset.k; render(); return; }
+    if (e.target.id === 'copy-profile') { const g = D[S.geo], i = g.idx.get(S.sel); copyText(['measure,value,unit,source', ...CAT.vars.map(v => [v.label, isFinite(g.v[v.key][i]) ? g.v[v.key][i] : '', v.unit, (CAT.sources[v.src] || { name: 'Your file' }).name].map(csvCell).join(','))].join('\n'), e.target); }
+  });
+  $('#copy-pair').addEventListener('click', e => { const g = D[S.geo]; copyText(['fips,name,state,population,' + csvCell(VAR.get(S.x).label) + ',' + csvCell(VAR.get(S.y).label), ...d3.range(g.n).map(i => [g.ids[i], g.name[i], g.st[i], isFinite(g.pop[i]) ? g.pop[i] : '', isFinite(g.v[S.x][i]) ? g.v[S.x][i] : '', isFinite(g.v[S.y][i]) ? g.v[S.y][i] : ''].map(csvCell).join(','))].join('\n'), e.target); });
+  $('#copyclose').addEventListener('click', () => $('#copybox').style.display = 'none');
+  $('#userfile').addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; try { $('#userfile-msg').textContent = addUserData(await f.text(), f.name); } catch (err) { $('#userfile-msg').textContent = err.message; } });
+  addEventListener('hashchange', route);
+  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.view === 'correlate') render(); }, 150); });
+}
+
+// user-supplied county CSV: adds every numeric column as a measure for this session
+function addUserData(text, fname) {
+  const rows = d3.csvParse(text); if (!rows.length) throw new Error('That file has no rows.');
+  const idc = rows.columns.find(c => ['fips', 'geoid', 'county_fips', 'countyfips', 'fips_code'].includes(c.toLowerCase().trim()));
+  if (!idc) throw new Error('No county FIPS column found. Name it fips, geoid or county_fips.');
+  const g = D.county, added = [];
+  if (!GROUP.has('user')) { const gr = { id: 'user', kind: 'outside', label: 'Your data' }; CAT.groups.push(gr); GROUP.set('user', gr); }
+  for (const c of rows.columns) {
+    if (c === idc) continue;
+    const a = new Float64Array(g.n).fill(NaN); let hit = 0;
+    for (const r of rows) { const i = g.idx.get(String(r[idc]).trim().padStart(5, '0')), v = r[c] === '' ? NaN : +r[c]; if (i != null && isFinite(v)) { a[i] = v; hit++; } }
+    if (hit < 30) continue;
+    const key = 'user_' + c.replace(/\W+/g, '_') + '_' + CAT.vars.length, meta = { key, label: c, group: 'user', unit: '', dec: 2, src: 'user', desc: `From ${fname}.`, kind: 'outside', n: hit };
+    g.v[key] = a; g.cache.clear();
+    const s = D.state, sa = new Float64Array(s.n).fill(NaN), num = new Float64Array(s.n), den = new Float64Array(s.n);
+    for (let i = 0; i < g.n; i++) if (isFinite(a[i]) && g.pop[i] > 0) { const j = s.byAbbr.get(g.st[i]); num[j] += a[i] * g.pop[i]; den[j] += g.pop[i]; }
+    for (let j = 0; j < s.n; j++) if (den[j] > 0) sa[j] = num[j] / den[j];
+    s.v[key] = sa; s.cache.clear();
+    CAT.vars.push(meta); VAR.set(key, meta); added.push(c);
+  }
+  if (!added.length) throw new Error('No numeric column matched at least 30 counties.');
+  refreshPickers(); S.y = CAT.vars[CAT.vars.length - 1].key; render();
+  return `Added ${added.length} measure${added.length > 1 ? 's' : ''}: ${added.join(', ')}. Find ${added.length > 1 ? 'them' : 'it'} under “Your data”.`;
+}
+
+// ---------------------------------------------------------------- boot
+function start(saved) {
+  Promise.all([d3.json('catalog.json'), d3.csv('counties.csv'), d3.csv('states.csv'), d3.json('geo.json')]).then(([cat, crow, srow, topo]) => {
+    CAT = cat; TOPO = topo;
+    const SHORT = { trump24: '2024 vote', ba_plus: 'education', pct_nhwhite: 'race', density: 'density', med_income: 'income' };
+    cat.groups.forEach(g => GROUP.set(g.id, g));
+    cat.vars.forEach(v => { v.kind = GROUP.get(v.group).kind; if (SHORT[v.key]) v.short = SHORT[v.key]; VAR.set(v.key, v); });
+    const keys = cat.vars.map(v => v.key);
+    D.county = buildGeo(crow, keys); D.state = buildGeo(srow, keys);
+    D.state.byAbbr = new Map(D.state.st.map((s, i) => [s, i]));
+    if (saved && saved.S) Object.assign(S, saved.S);
+    $('#loading').remove();
+    refreshPickers();
+    $('#statefilter').innerHTML = '<option value="">All states</option>' + d3.range(D.state.n).sort((a, b) => d3.ascending(D.state.name[a], D.state.name[b])).map(i => `<option value="${D.state.st[i]}">${esc(D.state.name[i])}</option>`).join('');
+    $('#controls').innerHTML = cat.controls.map(k => `<label class="chk"><input type="checkbox" id="ctl-${k}" value="${k}"><span>${esc(VAR.get(k).label)}</span></label>`).join('');
+    $('#n-out').textContent = cat.vars.filter(v => v.kind !== 'wisdom').length;
+    if (cat.r2) $('#r2-fact').textContent = `In this data, five county measures (2024 vote, education, race, density and income) reproduce a median of ${Math.round(cat.r2.median * 100)}% of the county-to-county variation in the 25 items (from ${Math.round(cat.r2.min * 100)}% to ${Math.round(cat.r2.max * 100)}% by item).`;
+    const cnt = {}; cat.vars.forEach(v => cnt[v.src] = (cnt[v.src] || 0) + 1);
+    $('#src-table').innerHTML = '<tr><th>Source</th><th>Published by</th><th>Vintage</th><th>Measures</th><th>Note</th></tr>' + Object.entries(cat.sources).map(([k, s]) => `<tr><td><a href="${esc(s.url)}">${esc(s.name)}</a></td><td>${esc(s.org)}</td><td>${esc(s.vintage)}</td><td>${cnt[k] || 0}</td><td>${esc(s.note)}</td></tr>`).join('');
+    initMap(); wire(); route();
+    if (S.stateFilter) { const i = D.state.byAbbr.get(S.stateFilter); if (i != null) MAP.zoomTo(D.state.ids[i]); }
+  }).catch(err => { $('#loading').textContent = 'The data files did not load. Reload the page; if it keeps failing, the data files are missing from this artifact.'; console.error(err); });
+}
+window.claude?.hot?.snapshot?.(() => ({ S }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
