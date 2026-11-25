@@ -8,7 +8,7 @@ The layout and look are adapted from [Will Huey's homepage](https://willhuey.com
 ```
 index.html          the page
 assets/site.css     styles
-assets/             tab icon, photo and paper figures
+assets/             tab icon, photo, CV and paper figures
 nn/                 the previous version of this site
 ```
 
@@ -23,7 +23,7 @@ python -m http.server 8000
 - **Photo:** the header uses `assets/alexander-mueller.jpg`. Replace that file to change it.
 - **Tab icon:** `favicon.ico` and the `favicon-*.png` / `apple-touch-icon.png` files in `assets/`, made from a drawing of me.
 - **CV:** save the PDF as `assets/cv.pdf`. The CV link in the header already points there.
-- **Paper links:** replace each greyed-out `arXiv` pill in `index.html` with the real link.
+- **Paper links:** once a preprint is public, add `<p class="pub-links"><a href="...">arXiv</a></p>` under that paper's summary in `index.html`. The pill style is already in `site.css`.
 - **News line and "Last updated":** both are plain text in `index.html`.
 
 ## The previous site (`/nn`)

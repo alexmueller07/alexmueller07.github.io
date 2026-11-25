@@ -209,6 +209,7 @@ h2 {
 .authors { margin: 0 0 3px; font-size: 0.92rem; line-height: 1.5; }
 .venue { margin: 0 0 8px; font-size: 0.9rem; color: var(--muted); }
 .summary { margin: 0 0 12px; font-size: 0.95rem; line-height: 1.6; }
+.pub-text > :last-child { margin-bottom: 0; }
 
 .pub-links { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
@@ -224,14 +225,6 @@ h2 {
 }
 
 .pub-links a:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-.pub-links .soon {
-  font-size: 0.8rem;
-  color: var(--muted);
-  padding: 3px 13px;
-  border: 1px dashed #cfd3da;
-  border-radius: 999px;
-}
 
 /* ---------- experience ---------- */
 
